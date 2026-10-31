@@ -19,6 +19,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
+      - run: google-chrome --version   # pin gorseli icin (runner'da hazir)
       - name: Buffer'a zamanla
         env:
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}

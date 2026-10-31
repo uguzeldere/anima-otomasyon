@@ -12,13 +12,17 @@ Ortam degiskenleri:
 import csv
 import datetime as dt
 import os
+import subprocess
 import sys
+import time
 import urllib.parse
 from collections import Counter
 from pathlib import Path
 
 import requests
 import yaml
+
+from pin_gorsel import pin_yap
 
 KOK = Path(__file__).parent
 TASARIM = KOK / "tasarimlar"
@@ -129,6 +133,27 @@ def bekleyen_sayisi(org, kanal):
     return len(d["posts"]["edges"])
 
 
+def raw_url(yol, repo, dal):
+    return f"https://raw.githubusercontent.com/{repo}/{dal}/{urllib.parse.quote(yol)}"
+
+
+def yayinla(dosya, url):
+    """Uretilen pin gorselini repoya gonderir (Buffer herkese acik linkten ceker)."""
+    if not os.environ.get("GITHUB_ACTIONS"):
+        return
+    git = lambda *a: subprocess.run(["git", *a], check=True, cwd=KOK)
+    git("config", "user.name", "anima-bot")
+    git("config", "user.email", "anima-bot@users.noreply.github.com")
+    git("add", str(dosya))
+    git("commit", "-m", f"pin: {Path(dosya).name}")
+    git("push")
+    for _ in range(24):  # raw linki aktif olana kadar bekle (en fazla 2 dk)
+        if requests.head(url, timeout=20).status_code == 200:
+            return
+        time.sleep(5)
+    raise RuntimeError(f"Pin gorseli yayinlanamadi: {url}")
+
+
 OLUSTUR = """mutation($i: CreatePostInput!) {
   createPost(input: $i) {
     ... on PostActionSuccess { post { id dueAt } }
@@ -151,7 +176,7 @@ def main():
     yol, urun, sezon = gorsel_sec(urunler, sezonlar, acik, gecmis)
     repo = os.environ.get("GITHUB_REPOSITORY", "KULLANICI/REPO")
     dal = os.environ.get("GITHUB_REF_NAME", "main")
-    gorsel_url = f"https://raw.githubusercontent.com/{repo}/{dal}/{urllib.parse.quote(yol)}"
+    gorsel_url = raw_url(yol, repo, dal)
     link = urun_ayar["urunler"][urun].get("etsy_link") or urun_ayar["magaza_link"]
 
     kanallar = gql(
@@ -185,6 +210,16 @@ def main():
         # Etsy Stats'ta trafik kaynagi gorunsun
         plink = f"{link}{'&' if '?' in link else '?'}utm_source={platform}&utm_medium=social&utm_campaign=anima-otomasyon"
         if platform == "pinterest":
+            # dikey 1000x1500 pin gorseli (sablon/pin.html)
+            pin_dosya = KOK / "pinler" / urun / f"{Path(yol).stem}--{metin_id.replace(':', '-')}.jpg"
+            pin_rel = pin_dosya.relative_to(KOK).as_posix()
+            if not pin_dosya.exists():
+                parcalar = (m["pin_ana"], m.get("pin_el", "")) if m.get("pin_ana") else None
+                pin_yap(KOK / yol, m["baslik"], urun, pin_dosya, parcalar)
+                print(f"  pin gorseli: {pin_rel}")
+                if canli:
+                    yayinla(pin_dosya, raw_url(pin_rel, repo, dal))
+            girdi["assets"] = [{"image": {"url": raw_url(pin_rel, repo, dal)}}]
             girdi["text"] = m["aciklama"]
             girdi["metadata"] = {"pinterest": {"boardServiceId": pano["serviceId"], "title": m["baslik"][:100], "url": plink}}
         else:
