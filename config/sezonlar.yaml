@@ -1,0 +1,22 @@
+# Dosya adında __sezon olan görsel (örn. xmas__christmas.jpg) sadece bu tarihlerde paylaşılır.
+# Sezonu açık olan görseller öne alınır. Tarih: AA-GG (yıl yok, her yıl tekrar eder).
+christmas:
+  baslangic: "10-15"
+  bitis: "12-25"
+  panolar: ["Christmas Gift Ideas for Coffee Lovers"]
+valentines:
+  baslangic: "11-20"
+  bitis: "02-14"
+  panolar: ["Valentine's Day Gifts", "Valentine’s Day Gifts"]
+mothers:
+  baslangic: "02-15"
+  bitis: "05-09"
+  panolar: []
+fathers:
+  baslangic: "03-25"
+  bitis: "06-20"
+  panolar: ["Gifts for Dad"]
+halloween:
+  baslangic: "08-01"
+  bitis: "10-31"
+  panolar: ["Halloween & Spooky Mugs", "Halloween Mug, Haunted House Under Full Moon,"]

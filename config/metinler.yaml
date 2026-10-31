@@ -1,0 +1,98 @@
+# Metin bankası. Otomasyon her paylaşımda en az kullanılmış metni seçer.
+# genel: her zaman. Sezon adı (christmas, valentines...): sadece o sezon açıkken.
+# baslik: Pinterest başlığı (en fazla 100 karakter)
+# aciklama: Pinterest açıklaması (en fazla 500 karakter)
+# tweet: X metni (link otomatik eklenir, 220 karakteri geçme)
+
+bear:
+  genel:
+    - baslik: "Dad & Me Bear Mugs – Grumpy, Fluffy and Ready for Coffee"
+      aciklama: "Hand-drawn fluffy bears on a cozy two-tone 11oz mug. One says Dad, one says Me – because some mornings you just need a bear that gets it. A funny coffee mug and a sweet gift for bear lovers."
+      tweet: "Some mornings you are the Dad bear. Some mornings you are the Me bear. 🐻☕"
+    - baslik: "Grumpy Bear Coffee Mug for Not-a-Morning Person"
+      aciklama: "This fluffy bear has not had his coffee yet, and it shows. Hand-drawn grumpy bear mug with a black handle and inside. Perfect for introverts, slow mornings and anyone who needs a minute before talking."
+      tweet: "Do not talk to me before coffee. The bear agrees. 🐻"
+    - baslik: "Cute Bear Mug – Hand-Drawn Fluffy Bear Gift"
+      aciklama: "A cute bear mug with a hand-drawn, slightly messy, very fluffy bear. Two-tone ceramic mug, 11oz, dishwasher and microwave safe. A cozy gift for bear lovers, coffee lovers and tea people too."
+      tweet: "Hand-drawn, very fluffy, slightly grumpy. Basically me before 9am. ☕🐻"
+    - baslik: "Matching Dad and Me Bear Mugs for Family Mornings"
+      aciklama: "Matching family mugs: a big Dad bear and a little Me bear. Make coffee time a shared ritual. Cute matching mug set for dads and kids, couples, or best friends."
+      tweet: "Matching mugs for the big bear and the little bear in your house. 🐻🐻"
+    - baslik: "Funny Animal Mug for Coffee Lovers – Fluffy Bear"
+      aciklama: "Funny animal mug with a fluffy bear that says exactly how you feel before coffee. Hand-drawn illustration on a white mug with a colored handle. Great as a funny coffee mug or a small gift under $25."
+      tweet: "A mug that understands your morning face. ☕"
+    - baslik: "Cozy Morning Coffee with a Grumpy Bear Mug"
+      aciklama: "Warm lights, slow coffee and a grumpy little bear. Cozy coffee aesthetic mug with a hand-drawn fluffy bear. Made for quiet mornings, work-from-home days and long book nights."
+      tweet: "Cozy mornings need a cozy mug. This one has a bear. 🐻✨"
+    - baslik: "Work From Home Mug – Grumpy Bear at the Desk"
+      aciklama: "Your work-from-home coworker: a fluffy, slightly judgmental bear on your coffee mug. Funny office mug and a cute gift for coworkers, remote workers and coffee addicts."
+      tweet: "New coworker. Doesn't talk. Holds coffee. Perfect. 🐻💻"
+    - baslik: "Bear Lover Gift – Fluffy Bear Coffee Mug"
+      aciklama: "Know someone who loves bears? This hand-drawn fluffy bear mug is a cute, cozy gift for birthdays, holidays or just because. 11oz ceramic two-tone mug."
+      tweet: "For the bear lover in your life (it might be you). 🐻"
+  christmas:
+    - baslik: "Christmas Gift for Coffee Lovers – Cozy Bear Mug"
+      aciklama: "A cozy Christmas gift idea under $25: a hand-drawn fluffy bear mug for coffee lovers. Great stocking stuffer, Secret Santa gift or a little something for Dad."
+      tweet: "Stocking stuffer idea: a grumpy bear who also loves Christmas coffee. 🎄🐻"
+    - baslik: "Secret Santa Gift Idea – Funny Bear Mug"
+      aciklama: "Funny and cute Secret Santa gift: a fluffy grumpy bear coffee mug. Works for coworkers, friends and family. Hand-drawn design, two-tone 11oz mug."
+      tweet: "Secret Santa sorted. Grumpy bear mug, zero stress. 🎁"
+    - baslik: "Christmas Gift for Dad – Dad Bear Coffee Mug"
+      aciklama: "Christmas gift idea for dad: a Dad Bear mug with a fluffy hand-drawn bear. Pair it with the Me Bear mug for a matching family gift under the tree."
+      tweet: "Dad gift for Christmas: a bear as fluffy as his morning hair. 🎄☕"
+    - baslik: "Cozy Christmas Morning Mug – Hand-Drawn Bear"
+      aciklama: "Christmas morning, pajamas, hot cocoa and a fluffy bear mug. A cozy holiday mug and cute gift for coffee and cocoa lovers."
+      tweet: "Christmas morning plan: pajamas, cocoa, bear mug. 🎄🐻"
+  valentines:
+    - baslik: "Valentine's Gift for Him – Cute Bear Couple Mugs"
+      aciklama: "Cute Valentine's gift for him or her: matching fluffy bear mugs. Hand-drawn, cozy and a little bit grumpy, just like real love before coffee."
+      tweet: "Valentine's idea: matching bear mugs for your favorite grumpy human. ❤️🐻"
+    - baslik: "His and Hers Bear Mugs – Cute Couple Gift"
+      aciklama: "His and hers mugs with hand-drawn fluffy bears. A cute couple gift for Valentine's Day, anniversaries or moving in together."
+      tweet: "His mug. Her mug. Same bear energy. ❤️"
+  mothers:
+    - baslik: "Mother's Day Gift – Cute Bear Coffee Mug for Mom"
+      aciklama: "Cozy Mother's Day gift idea: a fluffy hand-drawn bear mug for mom's morning coffee. Sweet, funny and under $25."
+      tweet: "Mother's Day idea: a fluffy bear for mom's coffee time. 💐🐻"
+  fathers:
+    - baslik: "Father's Day Gift – Dad Bear Coffee Mug"
+      aciklama: "The Father's Day gift dads actually use: a Dad Bear coffee mug with a fluffy hand-drawn bear. Add the Me Bear mug for a matching dad and kid set."
+      tweet: "Father's Day gift: Dad Bear mug. Fluffy outside, coffee inside. 🐻☕"
+    - baslik: "Dad and Me Matching Mugs – Father's Day Set"
+      aciklama: "Dad and Me matching bear mugs: one for dad, one for the little bear. A sweet Father's Day gift from kids."
+      tweet: "Dad bear + little bear = best Father's Day set. 🐻🐻"
+  halloween:
+    - baslik: "Autumn Coffee Mug – Cozy Grumpy Bear for Fall"
+      aciklama: "Fall mornings, pumpkin spice and a grumpy fluffy bear mug. Cozy autumn aesthetic coffee mug, hand-drawn."
+      tweet: "Pumpkin spice season. The bear is still grumpy. 🍂🐻"
+
+giraffe:
+  genel:
+    - baslik: "Funny Giraffe Coffee Mug – Hand-Drawn Giraffe"
+      aciklama: "A hand-drawn, wide-eyed giraffe on a white mug with a red handle and inside. Funny animal mug and a cute gift for giraffe lovers and coffee lovers."
+      tweet: "This giraffe had three espressos. Be like the giraffe. 🦒☕"
+    - baslik: "Giraffe Lover Gift – Cute Giraffe Mug"
+      aciklama: "Cute giraffe mug for the giraffe lover in your life. Hand-drawn illustration, two-tone red accent mug, 11oz. Great birthday gift under $25."
+      tweet: "For the friend who stops for every giraffe at the zoo. 🦒"
+    - baslik: "Espresso Time with a Wide-Eyed Giraffe Mug"
+      aciklama: "Wide awake after espresso, just like this giraffe. Funny coffee mug with a hand-drawn giraffe and red handle. Whimsical gift for coffee lovers."
+      tweet: "Me after the first espresso. 🦒⚡"
+    - baslik: "Whimsical Animal Mug – Red Handle Giraffe"
+      aciklama: "Whimsical animal mug with a quirky hand-drawn giraffe. Two-tone ceramic mug with red handle. Adds a little fun to every coffee break."
+      tweet: "Coffee breaks are better with a tall friend. 🦒☕"
+  christmas:
+    - baslik: "Christmas Gift Idea – Funny Giraffe Mug"
+      aciklama: "Quirky Christmas gift under $25: a hand-drawn giraffe coffee mug with a red handle. Fun stocking stuffer for giraffe and coffee lovers."
+      tweet: "Red handle, tall friend, perfect Christmas gift. 🎄🦒"
+
+halloween:
+  genel:
+    - baslik: "Haunted House Mug – Spooky Halloween Coffee Mug"
+      aciklama: "A crooked haunted house under a full moon on a black mug. Spooky season coffee mug for Halloween lovers and witchy mornings."
+      tweet: "Spooky season coffee hits different in a haunted house mug. 🏚️🌕"
+    - baslik: "Spooky Mug for Witchy Coffee Vibes"
+      aciklama: "Witchy aesthetic coffee mug with a haunted house and full moon. Great Halloween gift for spooky friends."
+      tweet: "Brewing potions. I mean coffee. 🦇☕"
+    - baslik: "Halloween Gift – Haunted House Under Full Moon Mug"
+      aciklama: "Halloween gift idea: a haunted house mug with full moon and twisted trees. Cozy, creepy and perfect for October mornings."
+      tweet: "October mornings need a haunted house on the mug. 🎃"

@@ -1,0 +1,36 @@
+name: Paylas
+
+on:
+  schedule:
+    - cron: "0 12 * * 1-5"   # Pzt-Cuma 12:00 UTC (15:00 Istanbul) -> haftada 5 paylasim
+  workflow_dispatch: {}      # Actions sekmesinden elle de calistirilabilir
+
+permissions:
+  contents: write            # gecmis.csv'yi geri kaydetmek icin
+
+concurrency: paylas
+
+jobs:
+  paylas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Buffer'a zamanla
+        env:
+          BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+          CANLI: ${{ vars.CANLI }}
+        run: python paylas.py
+      - name: Gecmisi kaydet
+        run: |
+          git config user.name "anima-bot"
+          git config user.email "anima-bot@users.noreply.github.com"
+          [ -f gecmis.csv ] || exit 0
+          git add gecmis.csv
+          if ! git diff --cached --quiet; then
+            git commit -m "gecmis: $(date -u +%F)"
+            git push
+          fi
