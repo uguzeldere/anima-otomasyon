@@ -5,7 +5,7 @@ magaza_link: "https://www.etsy.com/shop/ANIMAcommonsouls"
 urunler:
   bear:
     ad: "Dad & Me Bear Mugs"
-    etsy_link: ""
+    etsy_link: "https://animacommonsouls.etsy.com/listing/4605590659/dad-bear-mug-coffee-mug-fathers-day"
     panolar: ["Cute Bear Mugs", "Funny Mugs", "Gifts for Dad", "Matching Family & Couple Mugs"]
   giraffe:
     ad: "Giraffe Mug"
@@ -13,8 +13,14 @@ urunler:
     panolar: ["Funny Mugs", "Funny Animal Mugs"]
   halloween:
     ad: "Haunted House Mug"
-    etsy_link: ""
+    etsy_link: "https://animacommonsouls.etsy.com/listing/4605587616/halloween-haunted-house-under-full-moon"
     panolar: ["Halloween & Spooky Mugs", "Halloween Mug, Haunted House Under Full Moon,"]
+
+  # custom (kişiye özel fotoğraflı kupa): tasarimlar/custom/ klasörüne mockup koyunca açılır
+  custom:
+    ad: "Custom Photo and Text Mug"
+    etsy_link: "https://animacommonsouls.etsy.com/listing/4605499357/custom-photo-and-text-mug-personalized"
+    panolar: ["Funny Mugs"]
 
 # Hiçbir pano bulunamazsa bu kullanılır
 yedek_pano: "Funny Mugs"

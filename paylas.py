@@ -182,11 +182,13 @@ def main():
             "assets": [{"image": {"url": gorsel_url}}],
             "source": "anima-otomasyon",
         }
+        # Etsy Stats'ta trafik kaynagi gorunsun
+        plink = f"{link}{'&' if '?' in link else '?'}utm_source={platform}&utm_medium=social&utm_campaign=anima-otomasyon"
         if platform == "pinterest":
             girdi["text"] = m["aciklama"]
-            girdi["metadata"] = {"pinterest": {"boardServiceId": pano["serviceId"], "title": m["baslik"][:100], "url": link}}
+            girdi["metadata"] = {"pinterest": {"boardServiceId": pano["serviceId"], "title": m["baslik"][:100], "url": plink}}
         else:
-            girdi["text"] = f"{m['tweet']}\n\n{link}"
+            girdi["text"] = f"{m['tweet']}\n\n{plink}"
 
         print(f"\n[{platform}] {ne_zaman:%Y-%m-%d %H:%M} UTC  metin={metin_id}" + (f"  pano={pano['name']}" if platform == "pinterest" else ""))
         print("  " + (m["baslik"] + " | " if platform == "pinterest" else "") + girdi["text"].replace("\n", " "))
