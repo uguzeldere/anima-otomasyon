@@ -46,6 +46,12 @@ def aktif_ilanlar():
     return ilanlar
 
 
+def ilan_resim_listesi(listing_id):
+    """[(listing_image_id, url), ...] rank sirasiyla."""
+    return [(r["listing_image_id"], r["url_fullxfull"]) for r in sorted(
+        _istek("GET", f"/listings/{listing_id}/images")["results"], key=lambda r: r["rank"])]
+
+
 def ilan_resimleri(listing_id):
     return [r["url_fullxfull"] for r in sorted(
         _istek("GET", f"/listings/{listing_id}/images")["results"], key=lambda r: r["rank"])]

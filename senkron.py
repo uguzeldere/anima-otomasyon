@@ -4,8 +4,11 @@
 2. SEO: hic duzenlenmemis ya da SEO_GUN gunden eski ilanlarin basligini ve 13 etiketini
    Claude Haiku ile yeniden yazar (Etsy aramasinda ust siradaki ilanlarin etiketlerine bakarak)
    ve Etsy'ye uygular. Eski hali durum/seo_kayit.json'da saklanir (geri alma icin).
-3. Yeni ilan: resimlerini tasarimlar/<kisa_ad>/ altina indirir, urunu ve pin/tweet metinlerini
-   config/urunler_oto.yaml + config/metinler_oto.yaml'a yazar. paylas.py bunlari da kullanir.
+3. Yeni ilan: urunu ve pin/tweet metinlerini config/urunler_oto.yaml + config/metinler_oto.yaml'a
+   yazar. paylas.py bunlari da kullanir.
+4. Resimler: bilinen her ilanda Etsy'ye yeni eklenen resimleri tasarimlar/<urun>/etsy-<resim_id>.jpg
+   olarak indirir (sezon resmi ise Claude anlar, adina __sezon ekler). Indirilenler durum/resim_kayit.json'da.
+   Ilk kurulum: `python senkron.py --temel` mevcut resimleri indirmeden "goruldu" isaretler.
 
 Ortam: ETSY_KEYSTRING, ETSY_SHARED_SECRET, ETSY_TOKEN_ANAHTAR, ANTHROPIC_API_KEY, BUFFER_API_KEY
 CANLI=1 olmadan hicbir sey yazmaz/degistirmez, sadece ne yapacagini gosterir.
@@ -16,7 +19,7 @@ import os
 import re
 import sys
 from collections import Counter
-from typing import List
+from typing import List, Optional
 
 import anthropic
 import requests
@@ -29,6 +32,7 @@ from paylas import KOK, TASARIM, gql, yukle
 MODEL = "claude-haiku-5-5"
 SEO_GUN = 30  # ayni ilan en erken bu kadar gun sonra yeniden duzenlenir
 SEO_KAYIT = KOK / "durum" / "seo_kayit.json"
+RESIM_KAYIT = KOK / "durum" / "resim_kayit.json"
 URUN_OTO = KOK / "config" / "urunler_oto.yaml"
 METIN_OTO = KOK / "config" / "metinler_oto.yaml"
 
@@ -49,6 +53,10 @@ class Metin(BaseModel):
 class SezonMetin(BaseModel):
     sezon: str
     metinler: List[Metin]
+
+
+class ResimSezon(BaseModel):
+    sezon: Optional[str]
 
 
 class YeniUrun(BaseModel):
@@ -166,13 +174,44 @@ def urun_yap(ilan, panolar, sezonlar, mevcut_adlar):
     return kisa, urun, metinler, resimler
 
 
-def resimleri_indir(kisa, resimler):
+SEZON_SISTEM = (
+    "You classify Etsy mug product photos. If the scene is clearly themed for one of these holidays, "
+    "return its key: {sezonlar}. Christmas = trees, snow, ornaments, stockings. valentines = hearts, roses, pink romance. "
+    "halloween = pumpkins, autumn spooky decor. mothers / fathers = only if explicitly Mother's/Father's Day themed. "
+    "Plain, cozy, everyday or generic gift scenes -> null."
+)
+
+
+def resim_sezonu(url, sezonlar):
+    try:
+        s = sor(ResimSezon, SEZON_SISTEM.format(sezonlar=", ".join(sezonlar)),
+                "Which holiday is this photo themed for? null if none.", resim=url).sezon
+    except Exception as e:  # siniflama olmazsa genel resim say
+        print(f"    sezon anlasilamadi: {e}")
+        return None
+    s = (s or "").strip().lower()
+    return s if s in sezonlar else None
+
+
+def yeni_resimler(kisa, lid, d):
+    """Ilana Etsy'de yeni eklenen resimleri tasarimlar/<kisa>/ altina indir."""
+    gorulen = set(d["resim"].get(str(lid), []))
+    yeni = [(rid, url) for rid, url in etsy.ilan_resim_listesi(lid) if rid not in gorulen]
+    if not yeni:
+        return
+    print(f"  YENI RESIM: {len(yeni)} adet -> tasarimlar/{kisa}/")
+    if not d["canli"]:
+        return
     klasor = TASARIM / kisa
     klasor.mkdir(parents=True, exist_ok=True)
-    for i, url in enumerate(resimler[:10], 1):  # ilk 10 resim yeter
+    for rid, url in yeni:
         r = requests.get(url, timeout=60)
         r.raise_for_status()
-        (klasor / f"etsy-{i}.jpg").write_bytes(r.content)
+        sezon = resim_sezonu(url, d["sezonlar"])
+        ad = f"etsy-{rid}" + (f"__{sezon}" if sezon else "") + ".jpg"
+        (klasor / ad).write_bytes(r.content)
+        d["resim"].setdefault(str(lid), []).append(rid)
+        print(f"    {ad}")
 
 
 # ---------- ana akis ----------
@@ -218,16 +257,20 @@ def ilan_isle(ilan, d):
         print(f"  YENI URUN: {kisa} ({urun['ad']}), {len(resimler)} resim, panolar={urun['panolar']}, "
               f"metin gruplari={list(metinler)}")
         if d["canli"]:
-            resimleri_indir(kisa, resimler)
             d["oto_urun"][kisa] = urun
             d["oto_metin"][kisa] = metinler
             d["tum"][kisa] = urun
             d["bilinen"].add(lid)
 
+    kisa = next((k for k, u in d["tum"].items() if u.get("listing_id") == lid), None)
+    if kisa:
+        yeni_resimler(kisa, lid, d)
+
 
 def kaydet(d):
     SEO_KAYIT.parent.mkdir(exist_ok=True)
     SEO_KAYIT.write_text(json.dumps(d["kayit"], ensure_ascii=False, indent=2), encoding="utf-8")
+    RESIM_KAYIT.write_text(json.dumps(d["resim"], indent=2), encoding="utf-8")
     yaz_yaml(URUN_OTO, {"urunler": d["oto_urun"]}, "# OTOMATIK (senkron.py). Elle duzenleme: urunler.yaml'a tasi.\n")
     yaz_yaml(METIN_OTO, d["oto_metin"], "# OTOMATIK (senkron.py, Claude Haiku).\n")
 
@@ -245,11 +288,21 @@ def main():
         "oto_metin": oku_yaml(METIN_OTO),
         "tum": tum,
         "bilinen": {u.get("listing_id") for u in tum.values() if u.get("listing_id")},
-        "token": None, "panolar": None, "sezonlar": None,
+        "resim": json.loads(RESIM_KAYIT.read_text(encoding="utf-8")) if RESIM_KAYIT.exists() else {},
+        "token": None, "panolar": None, "sezonlar": list(yukle("sezonlar.yaml")),
     }
     atla = set(elle.get("atla") or [])
     ilanlar = [l for l in etsy.aktif_ilanlar() if l["listing_id"] not in atla]
     print(f"Aktif ilan: {len(ilanlar)} (atlanan: {len(atla)})")
+
+    if "--temel" in sys.argv:  # tek seferlik: mevcut resimleri indirmeden goruldu say
+        for ilan in ilanlar:
+            if ilan["listing_id"] in d["bilinen"]:
+                d["resim"][str(ilan["listing_id"])] = [rid for rid, _ in etsy.ilan_resim_listesi(ilan["listing_id"])]
+                print(f"  {ilan['listing_id']}: {len(d['resim'][str(ilan['listing_id'])])} resim goruldu")
+        RESIM_KAYIT.parent.mkdir(exist_ok=True)
+        RESIM_KAYIT.write_text(json.dumps(d["resim"], indent=2), encoding="utf-8")
+        return
 
     hatalar = []
     try:
