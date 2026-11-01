@@ -1,21 +1,18 @@
 """Etsy Open API v3 yardimcilari.
 
 Okuma (ilanlar, resimler, arama): sadece ETSY_KEYSTRING + ETSY_SHARED_SECRET.
-Yazma (baslik/etiket): OAuth token. Token sifreli olarak durum/etsy_token.enc'de durur
-(public repo), anahtari ETSY_TOKEN_ANAHTAR secret'inda. Ilk token: python etsy_giris.py
+Yazma (baslik/etiket): OAuth refresh token (ETSY_REFRESH_TOKEN). Ilk token: python etsy_giris.py
 """
-import json
 import os
+import subprocess
 import time
 from pathlib import Path
 
 import requests
-from cryptography.fernet import Fernet
 
 KOK = Path(__file__).parent
 API = "https://openapi.etsy.com/v3/application"
 TOKEN_URL = "https://api.etsy.com/v3/public/oauth/token"
-TOKEN_DOSYA = KOK / "durum" / "etsy_token.enc"
 SHOP_ID = 45455594
 
 
@@ -53,32 +50,38 @@ def arama_etiketleri(kelime, adet=25):
     return [t.lower() for l in sonuc["results"] for t in l.get("tags", [])]
 
 
-# ---- OAuth token (sifreli dosyada) ----
+# ---- OAuth token ----
+# Refresh token ETSY_REFRESH_TOKEN'da durur (lokal: .env, Actions: repo secret).
+# Etsy her yenilemede yeni refresh token verir; yenisi hemen geri yazilir.
 
-def _fernet():
-    return Fernet(os.environ["ETSY_TOKEN_ANAHTAR"].encode())
+ENV = KOK / ".env"
 
 
-def token_kaydet(veri):
-    TOKEN_DOSYA.parent.mkdir(exist_ok=True)
-    veri["alindi"] = int(time.time())
-    TOKEN_DOSYA.write_bytes(_fernet().encrypt(json.dumps(veri).encode()))
+def refresh_kaydet(token):
+    if os.environ.get("GITHUB_ACTIONS"):
+        # GH_TOKEN: secrets yazma yetkili PAT (GH_SECRET_TOKEN secret'i)
+        subprocess.run(["gh", "secret", "set", "ETSY_REFRESH_TOKEN", "-R", os.environ["GITHUB_REPOSITORY"]],
+                       input=token, text=True, check=True, capture_output=True)
+    else:
+        satirlar = [l for l in ENV.read_text(encoding="utf-8").splitlines() if not l.startswith("ETSY_REFRESH_TOKEN=")]
+        ENV.write_text("\n".join(satirlar + [f"ETSY_REFRESH_TOKEN={token}"]) + "\n", encoding="utf-8")
+    os.environ["ETSY_REFRESH_TOKEN"] = token
 
 
 def erisim_tokeni():
-    """Refresh token ile yeni access token alir; yeni refresh token'i dosyaya yazar."""
-    if not TOKEN_DOSYA.exists():
-        raise RuntimeError("Etsy token yok. Bir kere lokal calistir: python etsy_giris.py")
-    eski = json.loads(_fernet().decrypt(TOKEN_DOSYA.read_bytes()))
+    """Refresh token ile yeni access token alir; yeni refresh token'i saklar."""
+    eski = os.environ.get("ETSY_REFRESH_TOKEN")
+    if not eski:
+        raise RuntimeError("ETSY_REFRESH_TOKEN yok. Bir kere lokal calistir: python etsy_giris.py")
     r = requests.post(TOKEN_URL, data={
         "grant_type": "refresh_token",
         "client_id": os.environ["ETSY_KEYSTRING"],
-        "refresh_token": eski["refresh_token"],
+        "refresh_token": eski,
     }, timeout=60)
     if not r.ok:
         raise RuntimeError(f"Etsy token yenilenemedi ({r.status_code}): {r.text[:300]}. Tekrar: python etsy_giris.py")
     yeni = r.json()
-    token_kaydet(yeni)
+    refresh_kaydet(yeni["refresh_token"])
     return yeni["access_token"]
 
 

@@ -7,6 +7,7 @@ magaza_link: "https://www.etsy.com/shop/ANIMAcommonsouls"
 # Senkronun hiç dokunmayacağı ilanlar (SEO yok, ürün yok)
 atla:
   - 4604939641   # "Ceramic Mug, Lorem Ipsum Text"
+  - 4605499357   # custom/zurafa: aciklama duzeltilene kadar
 
 urunler:
   bear:

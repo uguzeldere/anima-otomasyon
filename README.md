@@ -31,7 +31,7 @@ Her gün 09:00 UTC'de "Etsy Senkron" çalışır:
 - Dokunulmasın istenen ilan: `config/urunler.yaml` → `atla:` listesine ilan numarasını ekle.
 - Printify'da ürünü yeniden "Publish" edersen başlık/etiket ezilebilir.
 
-Kurulum (bir kere): Etsy uygulamasında Callback URL `http://localhost:3003/callback`, lokal `python etsy_giris.py`, sonra `.env` içindeki tüm anahtarları GitHub secret yap.
+Kurulum (bir kere): Etsy uygulamasında Callback URL `http://localhost:3003/callback`, lokal `python etsy_giris.py` (refresh token `.env`'e yazılır), sonra `gh secret set -f .env`. Ayrıca `GH_SECRET_TOKEN` secret'ı: bu repoda Secrets read/write yetkili fine-grained PAT (workflow yeni Etsy token'ını buna yazar).
 
 ## Ayar dosyaları (Excel'in karşılığı)
 

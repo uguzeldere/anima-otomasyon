@@ -23,17 +23,17 @@ jobs:
         env:
           ETSY_KEYSTRING: ${{ secrets.ETSY_KEYSTRING }}
           ETSY_SHARED_SECRET: ${{ secrets.ETSY_SHARED_SECRET }}
-          ETSY_TOKEN_ANAHTAR: ${{ secrets.ETSY_TOKEN_ANAHTAR }}
+          ETSY_REFRESH_TOKEN: ${{ secrets.ETSY_REFRESH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_SECRET_TOKEN }}   # yeni refresh token'i secret'a yazmak icin
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
           CANLI: ${{ vars.CANLI }}
         run: python senkron.py
       - name: Kaydet
-        if: always()          # token dosyasi hata olsa da kaydedilsin (refresh token degisir)
         run: |
           git config user.name "anima-bot"
           git config user.email "anima-bot@users.noreply.github.com"
-          git add -A tasarimlar config durum
+          git add -A tasarimlar config durum 2>/dev/null || git add -A tasarimlar config
           if ! git diff --cached --quiet; then
             git commit -m "senkron: $(date -u +%F)"
             git push

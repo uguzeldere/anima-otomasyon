@@ -1,7 +1,7 @@
 """Etsy'ye bir kerelik giris (OAuth). Lokal calistir: python etsy_giris.py
 
-Tarayici acilir, Etsy'de "Allow" dersin, token sifreli olarak durum/etsy_token.enc'e yazilir.
-ETSY_TOKEN_ANAHTAR .env'de yoksa olusturup .env'e ekler.
+Tarayici acilir, Etsy'de "Allow" dersin, refresh token .env'e (ETSY_REFRESH_TOKEN) yazilir.
+Sonra GitHub'a: gh secret set -f .env
 Etsy uygulama ayarlarinda Callback URL olarak su ekli olmali: http://localhost:3003/callback
 """
 import base64
@@ -14,7 +14,6 @@ import webbrowser
 from pathlib import Path
 
 import requests
-from cryptography.fernet import Fernet
 
 import etsy
 
@@ -27,12 +26,6 @@ def env_yukle():
         if "=" in satir and not satir.startswith("#"):
             k, v = satir.split("=", 1)
             os.environ.setdefault(k.strip(), v.strip())
-    if not os.environ.get("ETSY_TOKEN_ANAHTAR"):
-        anahtar = Fernet.generate_key().decode()
-        with ENV.open("a", encoding="utf-8") as f:
-            f.write(f"\nETSY_TOKEN_ANAHTAR={anahtar}\n")
-        os.environ["ETSY_TOKEN_ANAHTAR"] = anahtar
-        print("ETSY_TOKEN_ANAHTAR olusturuldu ve .env'e eklendi.")
 
 
 def main():
@@ -72,8 +65,8 @@ def main():
         "redirect_uri": YONLENDIRME, "code": gelen["code"], "code_verifier": dogrulayici,
     }, timeout=60)
     r.raise_for_status()
-    etsy.token_kaydet(r.json())
-    print(f"OK. Token kaydedildi: {etsy.TOKEN_DOSYA}")
+    etsy.refresh_kaydet(r.json()["refresh_token"])
+    print("OK. Refresh token .env'e kaydedildi.")
 
 
 if __name__ == "__main__":
