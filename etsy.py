@@ -3,6 +3,7 @@
 Okuma (ilanlar, resimler, arama): sadece ETSY_KEYSTRING + ETSY_SHARED_SECRET.
 Yazma (baslik/etiket): OAuth refresh token (ETSY_REFRESH_TOKEN). Ilk token: python etsy_giris.py
 """
+import html
 import os
 import subprocess
 import time
@@ -36,7 +37,12 @@ def _istek(metod, yol, token=None, **kw):
 
 
 def aktif_ilanlar():
-    return _istek("GET", f"/shops/{SHOP_ID}/listings/active", params={"limit": 100})["results"]
+    ilanlar = _istek("GET", f"/shops/{SHOP_ID}/listings/active", params={"limit": 100})["results"]
+    for l in ilanlar:  # Etsy metinleri HTML kodlu doner (&#39; vb.)
+        l["title"] = html.unescape(l["title"])
+        l["description"] = html.unescape(l.get("description") or "")
+        l["tags"] = [html.unescape(t) for t in l.get("tags", [])]
+    return ilanlar
 
 
 def ilan_resimleri(listing_id):

@@ -7,7 +7,6 @@ magaza_link: "https://www.etsy.com/shop/ANIMAcommonsouls"
 # Senkronun hiç dokunmayacağı ilanlar (SEO yok, ürün yok)
 atla:
   - 4604939641   # "Ceramic Mug, Lorem Ipsum Text"
-  - 4605499357   # custom/zurafa: aciklama duzeltilene kadar
 
 urunler:
   bear:
@@ -17,7 +16,7 @@ urunler:
     panolar: ["Cute Bear Mugs", "Funny Mugs", "Gifts for Dad", "Matching Family & Couple Mugs"]
   giraffe:
     ad: "Giraffe Mug"
-    # ayrı ilanı yok, custom ilanında satılıyor
+    listing_id: 4605499357
     etsy_link: "https://animacommonsouls.etsy.com/listing/4605499357/custom-photo-and-text-mug-personalized"
     panolar: ["Funny Mugs", "Funny Animal Mugs"]
   halloween:
@@ -25,13 +24,6 @@ urunler:
     listing_id: 4605587616
     etsy_link: "https://animacommonsouls.etsy.com/listing/4605587616/halloween-haunted-house-under-full-moon"
     panolar: ["Halloween & Spooky Mugs", "Halloween Mug, Haunted House Under Full Moon,"]
-
-  # custom (kişiye özel fotoğraflı kupa): tasarimlar/custom/ klasörüne mockup koyunca açılır
-  custom:
-    ad: "Custom Photo and Text Mug"
-    listing_id: 4605499357
-    etsy_link: "https://animacommonsouls.etsy.com/listing/4605499357/custom-photo-and-text-mug-personalized"
-    panolar: ["Funny Mugs"]
 
 # Hiçbir pano bulunamazsa bu kullanılır
 yedek_pano: "Funny Mugs"
