@@ -23,6 +23,16 @@ Sen tasarım yaparsın, bu repo Pinterest ve X'e paylaşır (Buffer üzerinden).
 
 Hepsi bu kadar.
 
+## Etsy senkronu (otomatik, `senkron.py`)
+
+Her gün 09:00 UTC'de "Etsy Senkron" çalışır:
+- **Yeni ilan** (Printify → Etsy): resimlerini `tasarimlar/<ad>/` altına indirir, ürünü ve pin/tweet metinlerini (Claude Haiku) `config/urunler_oto.yaml` + `config/metinler_oto.yaml` dosyalarına yazar.
+- **SEO:** her ilanın başlığını ve 13 etiketini Etsy aramasında üst sıradaki ilanların etiketlerine bakarak yeniden yazar ve Etsy'ye uygular. Aynı ilana en erken 30 günde bir dokunur. Eski hâli `durum/seo_kayit.json`'da durur (geri almak için).
+- Dokunulmasın istenen ilan: `config/urunler.yaml` → `atla:` listesine ilan numarasını ekle.
+- Printify'da ürünü yeniden "Publish" edersen başlık/etiket ezilebilir.
+
+Kurulum (bir kere): Etsy uygulamasında Callback URL `http://localhost:3003/callback`, lokal `python etsy_giris.py`, sonra `.env` içindeki tüm anahtarları GitHub secret yap.
+
 ## Ayar dosyaları (Excel'in karşılığı)
 
 | Dosya | İçerik |
