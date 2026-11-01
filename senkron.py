@@ -61,8 +61,11 @@ class YeniUrun(BaseModel):
 
 def sor(model_sinifi, sistem, metin, resim=None):
     icerik = ([{"type": "image", "source": {"type": "url", "url": resim}}] if resim else []) + [{"type": "text", "text": metin}]
-    r = client.messages.parse(model=MODEL, max_tokens=8000, system=sistem,
-                              messages=[{"role": "user", "content": icerik}], output_format=model_sinifi)
+    try:
+        r = client.messages.parse(model=MODEL, max_tokens=16000, system=sistem,
+                                  messages=[{"role": "user", "content": icerik}], output_format=model_sinifi)
+    except ValueError as e:  # yarim/bozuk JSON (pydantic ValidationError da ValueError)
+        raise RuntimeError(f"Claude cevabi gecersiz: {str(e)[:200]}")
     if r.stop_reason != "end_turn" or r.parsed_output is None:
         raise RuntimeError(f"Claude cevabi kullanilamadi (stop_reason={r.stop_reason})")
     return r.parsed_output
@@ -182,67 +185,87 @@ def yaz_yaml(yol, veri, baslik):
     yol.write_text(baslik + yaml.safe_dump(veri, allow_unicode=True, sort_keys=False, width=1000), encoding="utf-8")
 
 
+def ilan_isle(ilan, d):
+    """Tek ilan: gerekirse SEO, yeni ise urun ekleme. d: ortak durum sozlugu."""
+    lid = ilan["listing_id"]
+    print(f"\n== {lid} {ilan['title'][:70]}")
+
+    if seo_zamani(d["kayit"], lid, d["bugun"]):
+        baslik, etiketler = seo_yap(ilan)
+        print(f"  SEO baslik: {ilan['title']}\n          -> {baslik}")
+        print(f"  SEO etiket: {', '.join(etiketler)}")
+        if len(etiketler) < 10 or len(baslik) < 20:
+            print("  ATLANDI: Claude cevabi eksik (etiket < 10 ya da baslik cok kisa).")
+        elif d["canli"]:
+            d["token"] = d["token"] or etsy.erisim_tokeni()
+            etsy.ilan_guncelle(d["token"], lid, title=baslik, tags=etiketler)
+            d["kayit"][str(lid)] = {"tarih": d["bugun"].isoformat(),
+                                    "eski": {"title": ilan["title"], "tags": ilan.get("tags", [])},
+                                    "yeni": {"title": baslik, "tags": etiketler}}
+            ilan["title"], ilan["tags"] = baslik, etiketler
+            print("  OK Etsy guncellendi")
+
+    if lid not in d["bilinen"]:
+        if d["panolar"] is None:
+            buf = yukle("buffer.yaml")
+            kanallar = gql("""query($o: OrganizationId!) { channels(input: {organizationId: $o}) {
+                id metadata { ... on PinterestMetadata { boards { name } } } } }""",
+                           {"o": buf["organization_id"]})["channels"]
+            d["panolar"] = [b["name"] for b in next(
+                k for k in kanallar if k["id"] == buf["channels"]["pinterest"])["metadata"]["boards"]]
+            d["sezonlar"] = list(yukle("sezonlar.yaml"))
+        kisa, urun, metinler, resimler = urun_yap(ilan, d["panolar"], d["sezonlar"], set(d["tum"]))
+        print(f"  YENI URUN: {kisa} ({urun['ad']}), {len(resimler)} resim, panolar={urun['panolar']}, "
+              f"metin gruplari={list(metinler)}")
+        if d["canli"]:
+            resimleri_indir(kisa, resimler)
+            d["oto_urun"][kisa] = urun
+            d["oto_metin"][kisa] = metinler
+            d["tum"][kisa] = urun
+            d["bilinen"].add(lid)
+
+
+def kaydet(d):
+    SEO_KAYIT.parent.mkdir(exist_ok=True)
+    SEO_KAYIT.write_text(json.dumps(d["kayit"], ensure_ascii=False, indent=2), encoding="utf-8")
+    yaz_yaml(URUN_OTO, {"urunler": d["oto_urun"]}, "# OTOMATIK (senkron.py). Elle duzenleme: urunler.yaml'a tasi.\n")
+    yaz_yaml(METIN_OTO, d["oto_metin"], "# OTOMATIK (senkron.py, Claude Haiku).\n")
+
+
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
-    canli = os.environ.get("CANLI") == "1"
-    bugun = dt.date.today()
     elle = yukle("urunler.yaml")
     oto_urun = oku_yaml(URUN_OTO).get("urunler") or {}
-    oto_metin = oku_yaml(METIN_OTO)
-    kayit = json.loads(SEO_KAYIT.read_text(encoding="utf-8")) if SEO_KAYIT.exists() else {}
-    atla = set(elle.get("atla") or [])
     tum = {**elle["urunler"], **oto_urun}
-    bilinen = {u.get("listing_id") for u in tum.values() if u.get("listing_id")}
-
+    d = {
+        "canli": os.environ.get("CANLI") == "1",
+        "bugun": dt.date.today(),
+        "kayit": json.loads(SEO_KAYIT.read_text(encoding="utf-8")) if SEO_KAYIT.exists() else {},
+        "oto_urun": oto_urun,
+        "oto_metin": oku_yaml(METIN_OTO),
+        "tum": tum,
+        "bilinen": {u.get("listing_id") for u in tum.values() if u.get("listing_id")},
+        "token": None, "panolar": None, "sezonlar": None,
+    }
+    atla = set(elle.get("atla") or [])
     ilanlar = [l for l in etsy.aktif_ilanlar() if l["listing_id"] not in atla]
     print(f"Aktif ilan: {len(ilanlar)} (atlanan: {len(atla)})")
-    token = None
-    panolar = sezonlar = None
 
-    for ilan in ilanlar:
-        lid = ilan["listing_id"]
-        print(f"\n== {lid} {ilan['title'][:70]}")
-
-        if seo_zamani(kayit, lid, bugun):
-            baslik, etiketler = seo_yap(ilan)
-            print(f"  SEO baslik: {ilan['title']}\n          -> {baslik}")
-            print(f"  SEO etiket: {', '.join(etiketler)}")
-            if len(etiketler) < 10 or len(baslik) < 20:
-                print("  ATLANDI: Claude cevabi eksik (etiket < 10 ya da baslik cok kisa).")
-            elif canli:
-                token = token or etsy.erisim_tokeni()
-                etsy.ilan_guncelle(token, lid, title=baslik, tags=etiketler)
-                kayit[str(lid)] = {"tarih": bugun.isoformat(),
-                                   "eski": {"title": ilan["title"], "tags": ilan.get("tags", [])},
-                                   "yeni": {"title": baslik, "tags": etiketler}}
-                ilan["title"], ilan["tags"] = baslik, etiketler
-                print("  OK Etsy guncellendi")
-
-        if lid not in bilinen:
-            if panolar is None:
-                buf = yukle("buffer.yaml")
-                kanallar = gql("""query($o: OrganizationId!) { channels(input: {organizationId: $o}) {
-                    id metadata { ... on PinterestMetadata { boards { name } } } } }""",
-                               {"o": buf["organization_id"]})["channels"]
-                panolar = [b["name"] for b in next(k for k in kanallar if k["id"] == buf["channels"]["pinterest"])["metadata"]["boards"]]
-                sezonlar = list(yukle("sezonlar.yaml"))
-            kisa, urun, metinler, resimler = urun_yap(ilan, panolar, sezonlar, set(tum))
-            print(f"  YENI URUN: {kisa} ({urun['ad']}), {len(resimler)} resim, panolar={urun['panolar']}, "
-                  f"metin gruplari={list(metinler)}")
-            if canli:
-                resimleri_indir(kisa, resimler)
-                oto_urun[kisa] = urun
-                oto_metin[kisa] = metinler
-                tum[kisa] = urun
-                bilinen.add(lid)
-
-    if canli:
-        SEO_KAYIT.parent.mkdir(exist_ok=True)
-        SEO_KAYIT.write_text(json.dumps(kayit, ensure_ascii=False, indent=2), encoding="utf-8")
-        yaz_yaml(URUN_OTO, {"urunler": oto_urun}, "# OTOMATIK (senkron.py). Elle duzenleme: urunler.yaml'a tasi.\n")
-        yaz_yaml(METIN_OTO, oto_metin, "# OTOMATIK (senkron.py, Claude Haiku).\n")
-    else:
+    hatalar = []
+    try:
+        for ilan in ilanlar:
+            try:
+                ilan_isle(ilan, d)
+            except Exception as e:  # bir ilan hata verirse digerleri devam etsin
+                hatalar.append(ilan["listing_id"])
+                print(f"  HATA: {e}")
+    finally:
+        if d["canli"]:
+            kaydet(d)  # yarida kalsa bile yapilan degisiklikler kayda gecsin
+    if not d["canli"]:
         print("\nDENEME modu: hicbir sey degistirilmedi. Gercek calisma icin CANLI=1.")
+    if hatalar:
+        sys.exit(f"Hata veren ilanlar: {hatalar}")
 
 
 if __name__ == "__main__":
