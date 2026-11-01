@@ -1,6 +1,6 @@
 """Her calistiginda Pinterest ve X icin Buffer'a 1'er gonderi zamanlar.
 
-Gorsel: tasarimlar/<urun>/<ad>[__sezon].jpg  (en az paylasilan, sezondakiler once)
+Gorsel: tasarimlar/<urun>/<ad>[__sezon].jpg  (en az paylasilan, sezondakiler once; etsy_* atlanir)
 Metin:  config/metinler.yaml               (en az kullanilan)
 Kayit:  gecmis.csv
 
@@ -78,6 +78,9 @@ def gorsel_sec(urunler, sezonlar, acik, gecmis):
     for urun in urunler:
         for p in sorted((TASARIM / urun).glob("*")):
             if p.suffix.lower() not in UZANTILAR:
+                continue
+            # etsy_ ile baslayanlar sadece Etsy ilani icin (Flow mockup araci), sosyal medyaya gitmez
+            if p.name.lower().startswith("etsy_"):
                 continue
             sezon = p.stem.split("__")[1] if "__" in p.stem else None
             if sezon and sezon not in acik:
