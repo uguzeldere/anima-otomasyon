@@ -4,6 +4,7 @@ Okuma (ilanlar, resimler, arama): sadece ETSY_KEYSTRING + ETSY_SHARED_SECRET.
 Yazma (baslik/etiket): OAuth refresh token (ETSY_REFRESH_TOKEN). Ilk token: python etsy_giris.py
 """
 import html
+import math
 import os
 import subprocess
 import time
@@ -50,10 +51,16 @@ def ilan_resimleri(listing_id):
         _istek("GET", f"/listings/{listing_id}/images")["results"], key=lambda r: r["rank"])]
 
 
-def arama_etiketleri(kelime, adet=25):
-    """Etsy aramasinda ust siradaki ilanlarin etiketleri (rakip/trend fikri icin)."""
+def arama_etiketleri(kelime, adet=50):
+    """Etsy aramasinda ust siradaki ilanlarin etiketleri, favori sayisina gore agirlikli.
+    Agirlik = 1 + log2(1 + favori): 0 favori -> 1, 10 favori -> ~4.5, 100 -> ~7.7"""
     sonuc = _istek("GET", "/listings/active", params={"keywords": kelime, "sort_on": "score", "limit": adet})
-    return [t.lower() for l in sonuc["results"] for t in l.get("tags", [])]
+    puan = {}
+    for l in sonuc["results"]:
+        agirlik = 1 + math.log2(1 + (l.get("num_favorers") or 0))
+        for t in {html.unescape(t).lower() for t in l.get("tags", [])}:
+            puan[t] = puan.get(t, 0) + agirlik
+    return puan
 
 
 # ---- OAuth token ----

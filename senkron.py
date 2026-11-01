@@ -80,7 +80,7 @@ Title: max 140 characters, most important search phrase first, natural readable 
 no ALL CAPS, use each of these characters at most once: % : & +
 Tags: exactly 13, each 20 characters or less, lowercase, only letters, numbers, spaces, hyphen and apostrophe.
 Use multi-word long-tail phrases buyers actually search (gift + recipient + occasion + style + product).
-Prefer phrases that appear often in the competitor tags, but only if they truly fit this product.
+Prefer phrases with a high score in the competitor tags (used often by well-liked listings), but only if they truly fit this product.
 Keep what the product fundamentally is: if the current title says custom, personalized, photo, set, or a size,
 that must stay in the new title (near the start) and in the tags. Never drop the main product type.
 Never claim things the product is not (material, color, size, personalization)."""
@@ -112,10 +112,10 @@ def seo_yap(ilan):
     rakip = Counter()
     for s in sorgular:
         rakip.update(etsy.arama_etiketleri(s))
-    populer = ", ".join(f"{t} ({n})" for t, n in rakip.most_common(40))
+    populer = ", ".join(f"{t} ({n:.0f})" for t, n in rakip.most_common(40))
     metin = (f"Current title: {ilan['title']}\nCurrent tags: {', '.join(ilan.get('tags', []))}\n"
              f"Description:\n{ilan.get('description', '')}\n\n"
-             f"Competitor tags from top Etsy search results (tag (count)):\n{populer}")
+             f"Competitor tags from top Etsy search results (tag (score); score = how often the tag is used, weighted by how many favorites those listings have):\n{populer}")
     s = sor(Seo, SEO_SISTEM, metin)
     return baslik_temizle(s.baslik), tag_temizle(s.etiketler)
 
