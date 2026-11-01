@@ -78,7 +78,9 @@ no ALL CAPS, use each of these characters at most once: % : & +
 Tags: exactly 13, each 20 characters or less, lowercase, only letters, numbers, spaces, hyphen and apostrophe.
 Use multi-word long-tail phrases buyers actually search (gift + recipient + occasion + style + product).
 Prefer phrases that appear often in the competitor tags, but only if they truly fit this product.
-Never claim things the product is not (material, size, personalization)."""
+Keep what the product fundamentally is: if the current title says custom, personalized, photo, set, or a size,
+that must stay in the new title (near the start) and in the tags. Never drop the main product type.
+Never claim things the product is not (material, color, size, personalization)."""
 
 
 def tag_temizle(etiketler):
