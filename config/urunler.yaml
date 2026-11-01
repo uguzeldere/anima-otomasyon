@@ -2,7 +2,7 @@
 # etsy_link boşsa mağaza linki kullanılır.
 # Yeni Etsy ilanları senkron.py ile otomatik eklenir (config/urunler_oto.yaml).
 # listing_id: Etsy ilan numarası (senkron bu ürünü tanısın, tekrar eklemesin diye).
-magaza_link: "https://www.etsy.com/shop/ANIMAcommonsouls"
+magaza_link: "https://animacommonsouls.etsy.com"  # Etsy Share & Save linki (satista komisyon iadesi)
 
 # Senkronun hiç dokunmayacağı ilanlar (SEO yok, ürün yok)
 atla:

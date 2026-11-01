@@ -183,6 +183,8 @@ def main():
     dal = os.environ.get("GITHUB_REF_NAME", "main")
     gorsel_url = raw_url(yol, repo, dal)
     link = urun_ayar["urunler"][urun].get("etsy_link") or urun_ayar["magaza_link"]
+    # Share & Save: ilan linkleri de magaza alt alan adindan gitsin (www.etsy.com/listing/.. -> animacommonsouls.etsy.com/listing/..)
+    link = link.replace("https://www.etsy.com/listing/", "https://animacommonsouls.etsy.com/listing/")
 
     kanallar = gql(
         """query($o: OrganizationId!) { channels(input: {organizationId: $o}) {
