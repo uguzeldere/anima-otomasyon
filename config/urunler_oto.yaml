@@ -1,0 +1,10 @@
+# OTOMATIK (senkron.py). Elle duzenleme: urunler.yaml'a tasi.
+urunler:
+  sooo-meow:
+    ad: Sooo Meow Fluffy Cat Mug
+    listing_id: 4606946341
+    etsy_link: https://www.etsy.com/listing/4606946341/fluffy-cartoon-cat-sooo-meow-mug-accent
+    panolar:
+    - Funny Mugs
+    - Cozy Coffee Aesthetic
+    - Christmas Gift Ideas for Coffee Lovers
