@@ -1,0 +1,40 @@
+name: Etsy Senkron
+
+on:
+  schedule:
+    - cron: "0 9 * * *"     # her gun 09:00 UTC (paylasimdan once)
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency: paylas          # paylas.yml ile ayni anda repoya yazmasin
+
+jobs:
+  senkron:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Etsy ilanlari -> SEO + yeni urunler
+        env:
+          ETSY_KEYSTRING: ${{ secrets.ETSY_KEYSTRING }}
+          ETSY_SHARED_SECRET: ${{ secrets.ETSY_SHARED_SECRET }}
+          ETSY_TOKEN_ANAHTAR: ${{ secrets.ETSY_TOKEN_ANAHTAR }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+          CANLI: ${{ vars.CANLI }}
+        run: python senkron.py
+      - name: Kaydet
+        if: always()          # token dosyasi hata olsa da kaydedilsin (refresh token degisir)
+        run: |
+          git config user.name "anima-bot"
+          git config user.email "anima-bot@users.noreply.github.com"
+          git add -A tasarimlar config durum
+          if ! git diff --cached --quiet; then
+            git commit -m "senkron: $(date -u +%F)"
+            git push
+          fi

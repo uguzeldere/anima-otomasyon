@@ -166,6 +166,11 @@ def main():
     sys.stdout.reconfigure(encoding="utf-8")
     canli = os.environ.get("CANLI") == "1"
     buf, urun_ayar, sezonlar, metinler = (yukle(a) for a in ("buffer.yaml", "urunler.yaml", "sezonlar.yaml", "metinler.yaml"))
+    # senkron.py'nin Etsy'den otomatik ekledigi urunler (elle yazilanlar onceliklidir)
+    if (KOK / "config" / "urunler_oto.yaml").exists():
+        oto = yukle("urunler_oto.yaml").get("urunler") or {}
+        urun_ayar["urunler"] = {**oto, **urun_ayar["urunler"]}
+        metinler = {**(yukle("metinler_oto.yaml") or {}), **metinler}
     simdi = dt.datetime.now(dt.timezone.utc)
     # gonderiler en gec ertesi gun cikar; sezonu o gune gore kontrol et
     yarin = (simdi + dt.timedelta(days=1)).date()

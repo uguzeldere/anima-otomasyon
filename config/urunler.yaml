@@ -1,24 +1,34 @@
 # Ürünler. Klasör adı = tasarimlar/ altındaki klasör adı.
-# etsy_link boşsa mağaza linki kullanılır. Ürün linklerini buraya yapıştır.
+# etsy_link boşsa mağaza linki kullanılır.
+# Yeni Etsy ilanları senkron.py ile otomatik eklenir (config/urunler_oto.yaml).
+# listing_id: Etsy ilan numarası (senkron bu ürünü tanısın, tekrar eklemesin diye).
 magaza_link: "https://www.etsy.com/shop/ANIMAcommonsouls"
+
+# Senkronun hiç dokunmayacağı ilanlar (SEO yok, ürün yok)
+atla:
+  - 4604939641   # "Ceramic Mug, Lorem Ipsum Text"
 
 urunler:
   bear:
     ad: "Dad & Me Bear Mugs"
+    listing_id: 4605590659
     etsy_link: "https://animacommonsouls.etsy.com/listing/4605590659/dad-bear-mug-coffee-mug-fathers-day"
     panolar: ["Cute Bear Mugs", "Funny Mugs", "Gifts for Dad", "Matching Family & Couple Mugs"]
   giraffe:
     ad: "Giraffe Mug"
-    etsy_link: ""
+    # ayrı ilanı yok, custom ilanında satılıyor
+    etsy_link: "https://animacommonsouls.etsy.com/listing/4605499357/custom-photo-and-text-mug-personalized"
     panolar: ["Funny Mugs", "Funny Animal Mugs"]
   halloween:
     ad: "Haunted House Mug"
+    listing_id: 4605587616
     etsy_link: "https://animacommonsouls.etsy.com/listing/4605587616/halloween-haunted-house-under-full-moon"
     panolar: ["Halloween & Spooky Mugs", "Halloween Mug, Haunted House Under Full Moon,"]
 
   # custom (kişiye özel fotoğraflı kupa): tasarimlar/custom/ klasörüne mockup koyunca açılır
   custom:
     ad: "Custom Photo and Text Mug"
+    listing_id: 4605499357
     etsy_link: "https://animacommonsouls.etsy.com/listing/4605499357/custom-photo-and-text-mug-personalized"
     panolar: ["Funny Mugs"]
 
