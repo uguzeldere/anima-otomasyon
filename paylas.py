@@ -5,7 +5,8 @@ Metin:  config/metinler.yaml               (en az kullanilan)
 Kayit:  gecmis.csv
 
 Ortam degiskenleri:
-  BUFFER_API_KEY   zorunlu
+  BUFFER_API_KEY   zorunlu (X icin; PINTEREST_DOGRUDAN yoksa Pinterest icin de)
+  PINTEREST_DOGRUDAN=1  Pinterest'e Buffer'siz, API v5 ile hemen pin at (pinterest.py)
   CANLI=1          gercekten gonder (yoksa sadece ne yapacagini yazar)
   GITHUB_REPOSITORY, GITHUB_REF_NAME  gorsel linki icin (Actions otomatik verir)
 """
@@ -22,6 +23,7 @@ from pathlib import Path
 import requests
 import yaml
 
+import pinterest
 from pin_gorsel import pin_yap
 
 KOK = Path(__file__).parent
@@ -186,12 +188,18 @@ def main():
     # Share & Save: ilan linkleri de magaza alt alan adindan gitsin (www.etsy.com/listing/.. -> animacommonsouls.etsy.com/listing/..)
     link = link.replace("https://www.etsy.com/listing/", "https://animacommonsouls.etsy.com/listing/")
 
-    kanallar = gql(
-        """query($o: OrganizationId!) { channels(input: {organizationId: $o}) {
-             id service metadata { ... on PinterestMetadata { boards { name serviceId } } } } }""",
-        {"o": buf["organization_id"]},
-    )["channels"]
-    panolar = next(k for k in kanallar if k["id"] == buf["channels"]["pinterest"])["metadata"]["boards"]
+    dogrudan = os.environ.get("PINTEREST_DOGRUDAN") == "1"
+    if dogrudan:
+        ptoken = pinterest.erisim_tokeni()
+        panolar = pinterest.panolar(ptoken)
+    else:
+        kanallar = gql(
+            """query($o: OrganizationId!) { channels(input: {organizationId: $o}) {
+                 id service metadata { ... on PinterestMetadata { boards { name serviceId } } } } }""",
+            {"o": buf["organization_id"]},
+        )["channels"]
+        panolar = [{"name": b["name"], "id": b["serviceId"]} for b in
+                   next(k for k in kanallar if k["id"] == buf["channels"]["pinterest"])["metadata"]["boards"]]
     # sezon gorseli once sezon panosuna gider
     pano_adlari = (sezonlar[sezon].get("panolar", []) if sezon else []) + urunler[urun].get("panolar", [])
     pano = pano_sec(pano_adlari, panolar, gecmis, urun_ayar["yedek_pano"])
@@ -204,7 +212,8 @@ def main():
     for platform in ("pinterest", "x"):
         kanal = buf["channels"][platform]
         metin_id, m = metin_sec(metinler, urun, sezon, acik, platform, gecmis)
-        ne_zaman = zaman(buf["saat_utc"][platform], simdi)
+        pin_hemen = dogrudan and platform == "pinterest"  # API v5'te zamanlama yok, hemen atilir
+        ne_zaman = simdi if pin_hemen else zaman(buf["saat_utc"][platform], simdi)
         girdi = {
             "channelId": kanal,
             "schedulingType": "automatic",
@@ -224,11 +233,11 @@ def main():
                 parcalar = (m["pin_ana"], m.get("pin_el", "")) if m.get("pin_ana") else None
                 pin_yap(KOK / yol, m["baslik"], urun, pin_dosya, parcalar)
                 print(f"  pin gorseli: {pin_rel}")
-                if canli:
+                if canli and not pin_hemen:  # dogrudan yolda gorsel dosyadan yuklenir, link gerekmez
                     yayinla(pin_dosya, raw_url(pin_rel, repo, dal))
             girdi["assets"] = [{"image": {"url": raw_url(pin_rel, repo, dal)}}]
             girdi["text"] = m["aciklama"]
-            girdi["metadata"] = {"pinterest": {"boardServiceId": pano["serviceId"], "title": m["baslik"][:100], "url": plink}}
+            girdi["metadata"] = {"pinterest": {"boardServiceId": pano["id"], "title": m["baslik"][:100], "url": plink}}
         else:
             girdi["text"] = f"{m['tweet']}\n\n{plink}"
 
@@ -237,7 +246,11 @@ def main():
 
         kayit = dict(tarih=simdi.date().isoformat(), platform=platform, urun=urun, gorsel=yol, metin_id=metin_id,
                      pano=pano["name"] if platform == "pinterest" else "", zaman_utc=girdi["dueAt"], buffer_id="", durum="deneme")
-        if canli:
+        if canli and pin_hemen:
+            pid = pinterest.pin_ac(ptoken, pano["id"], pin_dosya, m["baslik"], m["aciklama"], plink)
+            kayit.update(buffer_id=f"pin:{pid}", durum="paylasildi")
+            print(f"  OK pin_id={pid}")
+        elif canli:
             n = bekleyen_sayisi(buf["organization_id"], kanal)
             if n >= buf["kuyruk_siniri"]:
                 print(f"  ATLANDI: Buffer kuyrugunda {n} gonderi var (sinir {buf['kuyruk_siniri']}).")

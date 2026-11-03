@@ -61,3 +61,15 @@ Actions → Paylas → sağ üstte **…** → **Disable workflow**. Ya da `CANL
 - Buffer ücretsiz planı kanal başına en fazla 10 bekleyen gönderi alır. Kuyrukta 8 varsa script o gün atlar.
 - Görseller herkese açık link üzerinden Buffer'a gider (repo public olmasının sebebi bu). Anahtarlar kodda değil, Secrets'ta.
 - Lokal deneme: `.env` dosyasına `BUFFER_API_KEY=...` yaz, `python paylas.py`.
+
+## Pinterest'e Buffer'sız paylaşım (`pinterest.py`, hazır ama kapalı)
+
+Pinterest API onayı gelince:
+1. Pinterest uygulamasında Redirect URI: `http://localhost:3003/callback`
+2. `.env`'e `PINTEREST_APP_ID=...` ve `PINTEREST_APP_SECRET=...` yaz.
+3. Lokal `python pinterest.py giris` (refresh token `.env`'e yazılır), `python pinterest.py panolar` ile test.
+4. `gh secret set -f .env`, sonra repo variable `PINTEREST_DOGRUDAN` = `1`.
+
+Açıkken pin, paylaş çalıştığı anda (05:00 UTC) atılır; API'de zamanlama yok. X yine Buffer'dan gider.
+Trial erişimde pinler sandbox gerektirirse: variable `PINTEREST_API` = `https://api-sandbox.pinterest.com/v5`.
+Geri dönmek için `PINTEREST_DOGRUDAN` = `0`.

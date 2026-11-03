@@ -76,15 +76,15 @@ def arama_etiketleri(kelime, adet=50):
 ENV = KOK / ".env"
 
 
-def refresh_kaydet(token):
+def refresh_kaydet(token, ad="ETSY_REFRESH_TOKEN"):
     if os.environ.get("GITHUB_ACTIONS"):
         # GH_TOKEN: secrets yazma yetkili PAT (GH_SECRET_TOKEN secret'i)
-        subprocess.run(["gh", "secret", "set", "ETSY_REFRESH_TOKEN", "-R", os.environ["GITHUB_REPOSITORY"]],
+        subprocess.run(["gh", "secret", "set", ad, "-R", os.environ["GITHUB_REPOSITORY"]],
                        input=token, text=True, check=True, capture_output=True)
     else:
-        satirlar = [l for l in ENV.read_text(encoding="utf-8").splitlines() if not l.startswith("ETSY_REFRESH_TOKEN=")]
-        ENV.write_text("\n".join(satirlar + [f"ETSY_REFRESH_TOKEN={token}"]) + "\n", encoding="utf-8")
-    os.environ["ETSY_REFRESH_TOKEN"] = token
+        satirlar = [l for l in ENV.read_text(encoding="utf-8").splitlines() if not l.startswith(f"{ad}=")]
+        ENV.write_text("\n".join(satirlar + [f"{ad}={token}"]) + "\n", encoding="utf-8")
+    os.environ[ad] = token
 
 
 def erisim_tokeni():
