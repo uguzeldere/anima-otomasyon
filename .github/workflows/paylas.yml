@@ -2,7 +2,7 @@ name: Paylas
 
 on:
   schedule:
-    - cron: "0 12 * * 1-5"   # Pzt-Cuma 12:00 UTC (15:00 Istanbul) -> haftada 5 paylasim
+    - cron: "0 5 * * *"      # her gun 05:00 UTC (08:00 Istanbul); GH gecikse bile X 16:00 kacmaz
   workflow_dispatch: {}      # Actions sekmesinden elle de calistirilabilir
 
 permissions:

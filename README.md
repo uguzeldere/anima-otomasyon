@@ -4,7 +4,7 @@ Sen tasarım yaparsın, bu repo Pinterest ve X'e paylaşır (Buffer üzerinden).
 
 ## Nasıl çalışır
 
-- Pazartesi–Cuma her gün 12:00 UTC'de (15:00 İstanbul) GitHub Actions çalışır.
+- Her gün 05:00 UTC'de (08:00 İstanbul) GitHub Actions çalışır (senkron 03:00 UTC'de, önce).
 - `tasarimlar/` içinden en az paylaşılmış görseli seçer. Sezonu açık olanlar önce gelir.
 - `config/metinler.yaml` içinden en az kullanılmış metni seçer.
 - Buffer'a 2 gönderi zamanlar:

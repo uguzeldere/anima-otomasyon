@@ -2,7 +2,7 @@ name: Etsy Senkron
 
 on:
   schedule:
-    - cron: "0 9 * * *"     # her gun 09:00 UTC (paylasimdan once)
+    - cron: "0 3 * * *"     # her gun 03:00 UTC (paylasimdan once)
   workflow_dispatch: {}
 
 permissions:
