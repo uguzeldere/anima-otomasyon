@@ -163,6 +163,61 @@ def turlar(buf, mod):
 
 
 def ayarlar():
+    buf, urun_ayar, sezonlar, metinler = (yukle(a) for a in ("buffer.yaml", "urunler.yaml", "sezonlar.yaml", "metinler.yaml"))
+    # senkron.py'nin Etsy'den otomatik ekledigi urunler (elle yazilanlar onceliklidir)
+    if (KOK / "config" / "urunler_oto.yaml").exists():
+        oto = yukle("urunler_oto.yaml").get("urunler") or {}
+        urun_ayar["urunler"] = {**oto, **urun_ayar["urunler"]}
+        metinler = {**(yukle("metinler_oto.yaml") or {}), **metinler}
+    return buf, urun_ayar, sezonlar, metinler
+
+
+def acik_sezonlar(sezonlar, simdi):
+    # gonderiler en gec ertesi gun cikar; sezonu o gune gore kontrol et
+    yarin = (simdi + dt.timedelta(days=1)).date()
+    return [ad for ad, s in sezonlar.items() if sezon_acik(s, yarin)]
+
+
+def bekleyen_sayisi(org, kanal):
+    d = gql(
+        """query($i: PostsInput!) { posts(first: 50, input: $i) { edges { node { id } } } }""",
+        {"i": {"organizationId": org, "filter": {"status": ["scheduled"], "channelIds": [kanal]}}},
+    )
+    return len(d["posts"]["edges"])
+
+
+def raw_url(yol, repo, dal):
+    return f"https://raw.githubusercontent.com/{repo}/{dal}/{urllib.parse.quote(yol)}"
+
+
+def yayinla(dosya, url):
+    """Uretilen pin gorselini repoya gonderir (Buffer herkese acik linkten ceker)."""
+    if not os.environ.get("GITHUB_ACTIONS"):
+        return
+    git = lambda *a: subprocess.run(["git", *a], check=True, cwd=KOK)
+    git("config", "user.name", "anima-bot")
+    git("config", "user.email", "anima-bot@users.noreply.github.com")
+    git("add", str(dosya))
+    git("commit", "-m", f"pin: {Path(dosya).name}")
+    git("push")
+    for _ in range(24):  # raw linki aktif olana kadar bekle (en fazla 2 dk)
+        if requests.head(url, timeout=20).status_code == 200:
+            return
+        time.sleep(5)
+    raise RuntimeError(f"Pin gorseli yayinlanamadi: {url}")
+
+
+OLUSTUR = """mutation($i: CreatePostInput!) {
+  createPost(input: $i) {
+    ... on PostActionSuccess { post { id dueAt } }
+    ... on MutationError { message }
+  }
+}"""
+
+
+def main():
+    sys.stdout.reconfigure(encoding="utf-8")
+    canli = os.environ.get("CANLI") == "1"
     buf, urun_ayar, sezonlar, metinler = ayarlar()
     simdi = dt.datetime.now(dt.timezone.utc)
     acik = acik_sezonlar(sezonlar, simdi)
