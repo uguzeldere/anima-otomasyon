@@ -194,7 +194,9 @@ async function yenile(zorla) {
     calismaCiz(); siraCiz(); defteriCiz(); ozetCiz();
   } catch (e) {
     $('uyari').hidden = false;
-    $('uyari').textContent = `Panel verisi alınamadı: ${e.message}`;
+    $('uyari').textContent = e instanceof TypeError
+      ? 'Panel kapalı. Panel.bat dosyasını çalıştır, siyah pencereyi kapatma.'
+      : `Panel verisi alınamadı: ${e.message}`;
   }
 }
 
