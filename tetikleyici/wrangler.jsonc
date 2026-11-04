@@ -1,0 +1,11 @@
+{
+  // anima-tetikleyici: senkron ve paylas workflow'larini saatinde baslatir (Cloudflare cron)
+  // Secret: GH_TOKEN (repo icin Actions: write). `npx wrangler secret put GH_TOKEN`
+  "name": "anima-tetikleyici",
+  "main": "index.js",
+  "compatibility_date": "2026-10-08",
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": { "enabled": true, "logs": { "enabled": true } },
+  "triggers": { "crons": [] }
+}

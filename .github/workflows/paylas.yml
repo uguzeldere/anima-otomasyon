@@ -18,7 +18,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - run: pip install -r requirements.txt
+      - run: pip install -r requirements.txt || { sleep 30; pip install -r requirements.txt; }
       - run: google-chrome --version   # pin gorseli icin (runner'da hazir)
       - name: Buffer'a zamanla
         env:

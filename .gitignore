@@ -1,3 +1,4 @@
 .env
 __pycache__/
 sablon/_gecici_*.html
+.wrangler/
