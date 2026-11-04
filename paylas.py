@@ -240,6 +240,7 @@ def main():
         )["channels"]
         panolar = [{"name": b["name"], "id": b["serviceId"]} for b in
                    next(k for k in kanallar if k["id"] == buf["channels"]["pinterest"])["metadata"]["boards"]]
+    print("Panolar: " + " | ".join(p["name"] for p in panolar))
     for tur in turlar(buf, mod):
         yol, urun, sezon = gorsel_sec(urunler, sezonlar, acik, gecmis, istenen)
         gorsel_url = raw_url(yol, repo, dal)
