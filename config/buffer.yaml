@@ -3,11 +3,16 @@ channels:
   pinterest: "6ae5bfb02f1f5ed6482f7429"   # ANIMAcommonsouls
   x: "6ae5c01a2f1f5ed6482f77fc"           # DTSders
 
-# Paylasim saatleri (UTC). ABD aksami Pinterest, ABD oglen X.
+# Otomatik paylasim saatleri (UTC). Her liste elemani ayri gorsel; X ilk gorselle gider.
 # 01:00 UTC = 21:00 New York (yaz) / 20:00 (kis). 16:00 UTC = 12:00 / 11:00.
 saat_utc:
-  pinterest: "01:00"
-  x: "16:00"
+  pinterest: ["14:00", "20:00", "01:00"]
+  x: ["16:00"]
+
+# Paneldeki "Ideal saate zamanla" dugmesi: listedeki ilk bos saat.
+manuel_saat_utc:
+  pinterest: ["23:00", "18:00"]
+  x: ["22:00", "13:00"]
 
 # Buffer ucretsiz plan: kanal basina en fazla 10 bekleyen gonderi.
 kuyruk_siniri: 8

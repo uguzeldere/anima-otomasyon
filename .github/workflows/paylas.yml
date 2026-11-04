@@ -1,7 +1,20 @@
 name: Paylas
 
 on:
-  workflow_dispatch: {}      # Actions sekmesinden elle de calistirilabilir
+  workflow_dispatch:         # Cloudflare Worker (tetikleyici/) ve yerel panel (panel/) baslatir
+    inputs:
+      zamanlama:
+        type: choice
+        options: [otomatik, ideal, hemen]
+        default: otomatik
+      gorsel:
+        description: "Bos = siradaki gorsel"
+        type: string
+        default: ""
+      deneme:
+        description: "Hicbir sey gonderme"
+        type: boolean
+        default: false
 
 permissions:
   contents: write            # gecmis.csv'yi geri kaydetmek icin
@@ -21,7 +34,9 @@ jobs:
       - name: Buffer'a zamanla
         env:
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
-          CANLI: ${{ vars.CANLI }}
+          CANLI: ${{ inputs.deneme == true && '0' || vars.CANLI }}
+          ZAMANLAMA: ${{ inputs.zamanlama }}
+          GORSEL: ${{ inputs.gorsel }}
           PINTEREST_DOGRUDAN: ${{ vars.PINTEREST_DOGRUDAN }}   # 1 = Buffer'siz Pinterest (pinterest.py)
           PINTEREST_API: ${{ vars.PINTEREST_API }}             # bos = canli API
           PINTEREST_APP_ID: ${{ secrets.PINTEREST_APP_ID }}
@@ -30,6 +45,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_SECRET_TOKEN }}             # yeni refresh token'i secret'a yazmak icin
         run: python paylas.py
       - name: Gecmisi kaydet
+        if: always()         # bir tur hata alsa da yapilanlar kaydedilsin
         run: |
           git config user.name "anima-bot"
           git config user.email "anima-bot@users.noreply.github.com"

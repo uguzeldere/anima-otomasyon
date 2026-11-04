@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ANIMA Paylaşım</title>
+<style>
+:root {
+  --zemin: #f6f4f1; --kart: #fff; --yazi: #1f1b18; --soluk: #6f675f; --cizgi: #e4dfd8;
+  --vurgu: #b4530a; --vurgu-koyu: #93430a; --iyi: #1f7a4d; --kotu: #b3261e; --yol: #f0ebe4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --zemin: #171513; --kart: #211e1b; --yazi: #f2eee9; --soluk: #a89f95; --cizgi: #38332e;
+    --vurgu: #e08a3c; --vurgu-koyu: #f0a058; --iyi: #55c08c; --kotu: #f28b82; --yol: #2c2824;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--zemin); color: var(--yazi); font: 15px/1.45 "Segoe UI", system-ui, sans-serif; }
+header { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 18px 24px 8px; max-width: 1180px; margin: auto; }
+h1 { font-size: 20px; margin: 0; }
+h2 { font-size: 15px; margin: 0; }
+main { display: grid; grid-template-columns: 340px 1fr; gap: 18px; padding: 10px 24px 32px; max-width: 1180px; margin: auto; align-items: start; }
+.kart { background: var(--kart); border: 1px solid var(--cizgi); border-radius: 12px; padding: 16px; }
+.soluk { color: var(--soluk); font-size: 13px; }
+.onizleme { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; background: var(--yol); display: block; margin: 10px 0; }
+.urun-satir { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; }
+.urun { font-weight: 600; overflow-wrap: anywhere; }
+button { font: inherit; border-radius: 8px; cursor: pointer; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+button:focus-visible { outline: 2px solid var(--vurgu); outline-offset: 2px; }
+.ana, .ikinci { width: 100%; padding: 11px 12px; font-weight: 600; margin-top: 8px; }
+.ana { background: var(--vurgu); color: #fff; border: 0; }
+@media (prefers-color-scheme: dark) { .ana { color: #1f1b18; } }
+.ana:hover:not(:disabled) { background: var(--vurgu-koyu); }
+.ikinci { background: transparent; color: var(--yazi); border: 1px solid var(--cizgi); }
+.ikinci:hover:not(:disabled) { background: var(--yol); }
+.alt { display: block; font-weight: 400; font-size: 12px; margin-top: 1px; }
+.mini { background: transparent; color: var(--soluk); border: 1px solid var(--cizgi); padding: 4px 9px; font-size: 13px; white-space: nowrap; }
+#durum { margin-top: 12px; font-size: 13px; min-height: 19px; overflow-wrap: anywhere; }
+.iyi { color: var(--iyi); } .kotu { color: var(--kotu); }
+.ust { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.filtre button { background: transparent; border: 1px solid var(--cizgi); color: var(--soluk); padding: 4px 10px; font-size: 13px; margin-left: 4px; }
+.filtre button[aria-pressed="true"] { background: var(--yazi); border-color: var(--yazi); color: var(--kart); }
+.kaydirma { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { text-align: left; font-weight: 600; color: var(--soluk); font-size: 12px; padding: 6px 10px 6px 0; border-bottom: 1px solid var(--cizgi); white-space: nowrap; }
+td { padding: 8px 10px 8px 0; border-bottom: 1px solid var(--cizgi); vertical-align: middle; }
+tr:last-child td { border-bottom: 0; }
+td img { width: 44px; height: 44px; object-fit: cover; border-radius: 6px; display: block; background: var(--yol); }
+.saat { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.bos { padding: 24px 0; text-align: center; color: var(--soluk); }
+.uyari { max-width: 1132px; margin: 0 auto 10px; color: var(--kotu); font-size: 13px; }
+@media (max-width: 820px) {
+  header, main { padding-left: 16px; padding-right: 16px; }
+  main { grid-template-columns: 1fr; }
+  .onizleme { aspect-ratio: 4/3; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>ANIMA Paylaşım</h1>
+  <span class="soluk" id="ozet">Yükleniyor…</span>
+</header>
+<div class="uyari" id="uyari" hidden></div>
+<main>
+  <section class="kart" aria-label="Yeni paylaşım">
+    <h2>Sıradaki paylaşım</h2>
+    <img class="onizleme" id="onizleme" alt="Paylaşılacak görsel">
+    <div class="urun-satir">
+      <div>
+        <div class="urun" id="urun">—</div>
+        <div class="soluk" id="urun-alt"></div>
+      </div>
+      <button class="mini" id="baska" type="button">Başka görsel</button>
+    </div>
+    <button class="ana" id="ideal" type="button">İdeal saate zamanla<span class="alt" id="ideal-alt"></span></button>
+    <button class="ikinci" id="hemen" type="button">Hemen paylaş<span class="alt soluk">Pinterest ve X, yaklaşık 10 dakika içinde</span></button>
+    <div id="durum" role="status" aria-live="polite"></div>
+  </section>
+
+  <section class="kart" aria-label="Kayıt defteri">
+    <div class="ust">
+      <h2>Kayıt defteri</h2>
+      <div class="filtre" id="filtre">
+        <button type="button" data-p="" aria-pressed="true">Tümü</button>
+        <button type="button" data-p="pinterest" aria-pressed="false">Pinterest</button>
+        <button type="button" data-p="x" aria-pressed="false">X</button>
+      </div>
+    </div>
+    <div class="kaydirma">
+      <table>
+        <thead><tr><th></th><th>Zaman</th><th>Platform</th><th>Ürün</th><th>Pano</th><th>Durum</th></tr></thead>
+        <tbody id="kayitlar"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const veri = { sira: [], gecmis: [], ideal: {}, calisma: null };
+let secili = 0, filtre = '', izliyor = false, baslangic = 0;
+
+const saat = iso => new Date(iso).toLocaleString('tr-TR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+const kisaSaat = iso => {
+  const t = new Date(iso), bugun = new Date();
+  const s = t.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  if (t.toDateString() === bugun.toDateString()) return `bugün ${s}`;
+  bugun.setDate(bugun.getDate() + 1);
+  return t.toDateString() === bugun.toDateString() ? `yarın ${s}` : saat(iso);
+};
+const gorselAdres = yol => `/gorsel?yol=${encodeURIComponent(yol)}`;
+const PLATFORM = { pinterest: 'Pinterest', x: 'X' };
+
+function durumYazi(k) {
+  if (k.durum === 'paylasildi') return 'Paylaşıldı';
+  return new Date(k.zaman_utc) > new Date() ? 'Bekliyor' : 'Buffer\'a verildi, saati geçti';
+}
+
+function hucre(metin) {
+  const td = document.createElement('td');
+  td.textContent = metin;
+  return td;
+}
+
+function defteriCiz() {
+  const govde = $('kayitlar');
+  govde.replaceChildren();
+  const liste = veri.gecmis.filter(k => !filtre || k.platform === filtre)
+    .sort((a, b) => b.zaman_utc.localeCompare(a.zaman_utc));
+  if (!liste.length) {
+    const tr = document.createElement('tr'), td = hucre('Henüz kayıt yok.');
+    td.colSpan = 6; td.className = 'bos'; tr.append(td); govde.append(tr);
+    return;
+  }
+  for (const k of liste) {
+    const tr = document.createElement('tr');
+    const resim = document.createElement('td'), img = new Image();
+    img.src = gorselAdres(k.gorsel); img.alt = ''; img.loading = 'lazy';
+    img.onerror = () => img.remove();
+    resim.append(img);
+    const zaman = hucre(saat(k.zaman_utc)); zaman.className = 'saat';
+    tr.append(resim, zaman, hucre(PLATFORM[k.platform] || k.platform), hucre(k.urun), hucre(k.pano || '—'), hucre(durumYazi(k)));
+    govde.append(tr);
+  }
+}
+
+function siraCiz() {
+  const g = veri.sira[secili];
+  $('baska').disabled = veri.sira.length < 2;
+  $('ideal').disabled = $('hemen').disabled = !g || izliyor;
+  if (!g) {
+    $('urun').textContent = 'Paylaşılacak görsel yok';
+    $('urun-alt').textContent = '';
+    $('onizleme').removeAttribute('src');
+    return;
+  }
+  $('onizleme').src = gorselAdres(g.yol);
+  $('urun').textContent = g.urun;
+  $('urun-alt').textContent = `${g.sezon ? g.sezon + ' · ' : ''}${g.adet ? g.adet + ' kez paylaşıldı' : 'hiç paylaşılmadı'}`;
+  const i = veri.ideal;
+  $('ideal-alt').textContent = i.pinterest ? `Pinterest ${kisaSaat(i.pinterest)}, X ${kisaSaat(i.x)}` : '';
+}
+
+function ozetCiz() {
+  const bugun = new Date().toDateString();
+  const say = p => veri.gecmis.filter(k => k.platform === p && new Date(k.zaman_utc).toDateString() === bugun).length;
+  $('ozet').textContent = `Bugün: Pinterest ${say('pinterest')}, X ${say('x')} · Toplam ${veri.gecmis.length} kayıt`;
+}
+
+function calismaCiz() {
+  const c = veri.calisma, el = $('durum');
+  if (!izliyor || !c) return;
+  const yeni = new Date(c.createdAt).getTime() >= baslangic - 30000;
+  if (!yeni || c.status !== 'completed') { el.className = ''; el.textContent = 'Paylaşım hazırlanıyor, 1-3 dakika sürer…'; return; }
+  izliyor = false;
+  if (c.conclusion === 'success') { el.className = 'iyi'; el.textContent = 'Tamam, Buffer\'a verildi. Kayıt defteri güncellendi.'; }
+  else { el.className = 'kotu'; el.textContent = `Paylaşım başarısız oldu (${c.conclusion}). GitHub Actions kaydına bak.`; }
+}
+
+async function yenile(zorla) {
+  try {
+    const r = await fetch('/api/durum' + (zorla ? '?zorla=1' : ''));
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.hata);
+    const yol = veri.sira[secili]?.yol;
+    Object.assign(veri, d);
+    const yer = veri.sira.findIndex(g => g.yol === yol);
+    secili = yer >= 0 ? yer : 0;
+    $('uyari').hidden = !d.uyari;
+    $('uyari').textContent = d.uyari;
+    calismaCiz(); siraCiz(); defteriCiz(); ozetCiz();
+  } catch (e) {
+    $('uyari').hidden = false;
+    $('uyari').textContent = `Panel verisi alınamadı: ${e.message}`;
+  }
+}
+
+async function paylas(zamanlama) {
+  const g = veri.sira[secili];
+  if (!g || izliyor) return;
+  izliyor = true; baslangic = Date.now(); siraCiz();
+  $('durum').className = ''; $('durum').textContent = 'Başlatılıyor…';
+  try {
+    const r = await fetch('/api/paylas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Anima': '1' },
+      body: JSON.stringify({ zamanlama, gorsel: g.yol }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.hata);
+    izle();
+  } catch (e) {
+    izliyor = false; siraCiz();
+    $('durum').className = 'kotu'; $('durum').textContent = `Başlatılamadı: ${e.message}`;
+  }
+}
+
+async function izle() {
+  while (izliyor) {
+    await new Promise(r => setTimeout(r, 8000));
+    await yenile(true);
+  }
+  siraCiz();
+}
+
+$('ideal').onclick = () => paylas('ideal');
+$('hemen').onclick = () => paylas('hemen');
+$('baska').onclick = () => { secili = (secili + 1) % veri.sira.length; siraCiz(); };
+$('filtre').onclick = e => {
+  if (!e.target.dataset || e.target.dataset.p === undefined) return;
+  filtre = e.target.dataset.p;
+  for (const b of $('filtre').children) b.setAttribute('aria-pressed', b === e.target);
+  defteriCiz();
+};
+yenile(true);
+setInterval(() => { if (!izliyor) yenile(false); }, 60000);
+</script>
+</body>
+</html>

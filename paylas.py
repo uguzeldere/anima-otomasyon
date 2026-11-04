@@ -76,7 +76,8 @@ def gecmise_yaz(satirlar):
         w.writerows(satirlar)
 
 
-def gorsel_sec(urunler, sezonlar, acik, gecmis):
+def gorsel_adaylari(urunler, acik, gecmis, izinli=None):
+    """Paylasim sirasina dizili (sezon_onceligi, paylasim_sayisi, yol, urun, sezon) listesi."""
     sayac = Counter(g["gorsel"] for g in gecmis if g["platform"] == "pinterest")
     adaylar = []
     for urun in urunler:
@@ -89,12 +90,21 @@ def gorsel_sec(urunler, sezonlar, acik, gecmis):
             if sezon and sezon not in acik:
                 continue
             yol = p.relative_to(KOK).as_posix()
+            if izinli is not None and yol not in izinli:  # panel: GitHub'da olmayan yerel dosya
+                continue
             # once sezondakiler, sonra en az paylasilan, sonra ada gore
             adaylar.append((0 if sezon else 1, sayac[yol], yol, urun, sezon))
-    if not adaylar:
-        sys.exit("Paylasilacak gorsel yok (tasarimlar/ bos ya da hepsi sezon disi).")
     # sezonluk gorsel ile genel gorsel donusumlu gitsin: en az paylasilan once
     adaylar.sort(key=lambda a: (a[1], a[0], a[2]))
+    return adaylar
+
+
+def gorsel_sec(urunler, sezonlar, acik, gecmis, istenen=""):
+    adaylar = gorsel_adaylari(urunler, acik, gecmis)
+    if istenen:
+        adaylar = [a for a in adaylar if a[2] == istenen]
+    if not adaylar:
+        sys.exit("Paylasilacak gorsel yok (tasarimlar/ bos ya da hepsi sezon disi).")
     _, _, yol, urun, sezon = adaylar[0]
     return yol, urun, sezon
 
@@ -131,66 +141,37 @@ def zaman(saat, simdi):
     return t
 
 
-def bekleyen_sayisi(org, kanal):
-    d = gql(
-        """query($i: PostsInput!) { posts(first: 50, input: $i) { edges { node { id } } } }""",
-        {"i": {"organizationId": org, "filter": {"status": ["scheduled"], "channelIds": [kanal]}}},
-    )
-    return len(d["posts"]["edges"])
+def bos_zaman(saatler, simdi, dolu):
+    """Saat listesinden, kayitta dolu olmayan ilk zaman. Ayni saate iki gonderi dusmez."""
+    adaylar = sorted(zaman(s, simdi) + dt.timedelta(days=g) for s in saatler for g in range(3))
+    return next(t for t in adaylar if zaman_metni(t) not in dolu)
 
 
-def raw_url(yol, repo, dal):
-    return f"https://raw.githubusercontent.com/{repo}/{dal}/{urllib.parse.quote(yol)}"
+def zaman_metni(t):
+    return t.isoformat().replace("+00:00", "Z")
 
 
-def yayinla(dosya, url):
-    """Uretilen pin gorselini repoya gonderir (Buffer herkese acik linkten ceker)."""
-    if not os.environ.get("GITHUB_ACTIONS"):
-        return
-    git = lambda *a: subprocess.run(["git", *a], check=True, cwd=KOK)
-    git("config", "user.name", "anima-bot")
-    git("config", "user.email", "anima-bot@users.noreply.github.com")
-    git("add", str(dosya))
-    git("commit", "-m", f"pin: {Path(dosya).name}")
-    git("push")
-    for _ in range(24):  # raw linki aktif olana kadar bekle (en fazla 2 dk)
-        if requests.head(url, timeout=20).status_code == 200:
-            return
-        time.sleep(5)
-    raise RuntimeError(f"Pin gorseli yayinlanamadi: {url}")
+def turlar(buf, mod):
+    """Her tur tek gorsel: {platform: saat listesi}. None = hemen."""
+    if mod == "hemen":
+        return [{"pinterest": None, "x": None}]
+    if mod == "ideal":
+        return [buf["manuel_saat_utc"]]
+    saatler = buf["saat_utc"]
+    return [{p: [v[i]] for p, v in saatler.items() if i < len(v)}
+            for i in range(max(len(v) for v in saatler.values()))]
 
 
-OLUSTUR = """mutation($i: CreatePostInput!) {
-  createPost(input: $i) {
-    ... on PostActionSuccess { post { id dueAt } }
-    ... on MutationError { message }
-  }
-}"""
-
-
-def main():
-    sys.stdout.reconfigure(encoding="utf-8")
-    canli = os.environ.get("CANLI") == "1"
-    buf, urun_ayar, sezonlar, metinler = (yukle(a) for a in ("buffer.yaml", "urunler.yaml", "sezonlar.yaml", "metinler.yaml"))
-    # senkron.py'nin Etsy'den otomatik ekledigi urunler (elle yazilanlar onceliklidir)
-    if (KOK / "config" / "urunler_oto.yaml").exists():
-        oto = yukle("urunler_oto.yaml").get("urunler") or {}
-        urun_ayar["urunler"] = {**oto, **urun_ayar["urunler"]}
-        metinler = {**(yukle("metinler_oto.yaml") or {}), **metinler}
+def ayarlar():
+    buf, urun_ayar, sezonlar, metinler = ayarlar()
     simdi = dt.datetime.now(dt.timezone.utc)
-    # gonderiler en gec ertesi gun cikar; sezonu o gune gore kontrol et
-    yarin = (simdi + dt.timedelta(days=1)).date()
-    acik = [ad for ad, s in sezonlar.items() if sezon_acik(s, yarin)]
+    acik = acik_sezonlar(sezonlar, simdi)
     gecmis = gecmisi_oku()
     urunler = urun_ayar["urunler"]
-
-    yol, urun, sezon = gorsel_sec(urunler, sezonlar, acik, gecmis)
+    mod = os.environ.get("ZAMANLAMA") or "otomatik"
+    istenen = os.environ.get("GORSEL") or ""
     repo = os.environ.get("GITHUB_REPOSITORY", "KULLANICI/REPO")
     dal = os.environ.get("GITHUB_REF_NAME", "main")
-    gorsel_url = raw_url(yol, repo, dal)
-    link = urun_ayar["urunler"][urun].get("etsy_link") or urun_ayar["magaza_link"]
-    # Share & Save: ilan linkleri de magaza alt alan adindan gitsin (www.etsy.com/listing/.. -> animacommonsouls.etsy.com/listing/..)
-    link = link.replace("https://www.etsy.com/listing/", "https://animacommonsouls.etsy.com/listing/")
 
     dogrudan = os.environ.get("PINTEREST_DOGRUDAN") == "1"
     if dogrudan:
@@ -204,71 +185,86 @@ def main():
         )["channels"]
         panolar = [{"name": b["name"], "id": b["serviceId"]} for b in
                    next(k for k in kanallar if k["id"] == buf["channels"]["pinterest"])["metadata"]["boards"]]
-    # sezon gorseli once sezon panosuna gider
-    pano_adlari = (sezonlar[sezon].get("panolar", []) if sezon else []) + urunler[urun].get("panolar", [])
-    pano = pano_sec(pano_adlari, panolar, gecmis, urun_ayar["yedek_pano"])
+    for tur in turlar(buf, mod):
+        yol, urun, sezon = gorsel_sec(urunler, sezonlar, acik, gecmis, istenen)
+        gorsel_url = raw_url(yol, repo, dal)
+        link = urun_ayar["urunler"][urun].get("etsy_link") or urun_ayar["magaza_link"]
+        # Share & Save: ilan linkleri de magaza alt alan adindan gitsin (www.etsy.com/listing/.. -> animacommonsouls.etsy.com/listing/..)
+        link = link.replace("https://www.etsy.com/listing/", "https://animacommonsouls.etsy.com/listing/")
 
-    print(f"Acik sezonlar: {acik or '-'}")
-    print(f"Gorsel: {yol}  ({urun}, sezon={sezon or '-'})")
-    print(f"Link: {link}")
+        # sezon gorseli once sezon panosuna gider
+        pano_adlari = (sezonlar[sezon].get("panolar", []) if sezon else []) + urunler[urun].get("panolar", [])
+        pano = pano_sec(pano_adlari, panolar, gecmis, urun_ayar["yedek_pano"])
 
-    kayitlar = []
-    for platform in ("pinterest", "x"):
-        kanal = buf["channels"][platform]
-        metin_id, m = metin_sec(metinler, urun, sezon, acik, platform, gecmis)
-        pin_hemen = dogrudan and platform == "pinterest"  # API v5'te zamanlama yok, hemen atilir
-        ne_zaman = simdi if pin_hemen else zaman(buf["saat_utc"][platform], simdi)
-        girdi = {
-            "channelId": kanal,
-            "schedulingType": "automatic",
-            "mode": "customScheduled",
-            "dueAt": ne_zaman.isoformat().replace("+00:00", "Z"),
-            "needsApproval": False,
-            "assets": [{"image": {"url": gorsel_url}}],
-            "source": "anima-otomasyon",
-        }
-        # Etsy Stats'ta trafik kaynagi gorunsun
-        plink = f"{link}{'&' if '?' in link else '?'}utm_source={platform}&utm_medium=social&utm_campaign=anima-otomasyon"
-        if platform == "pinterest":
-            # dikey 1000x1500 pin gorseli (sablon/pin.html)
-            pin_dosya = KOK / "pinler" / urun / f"{Path(yol).stem}--{metin_id.replace(':', '-')}.jpg"
-            pin_rel = pin_dosya.relative_to(KOK).as_posix()
-            if not pin_dosya.exists():
-                parcalar = (m["pin_ana"], m.get("pin_el", "")) if m.get("pin_ana") else None
-                pin_yap(KOK / yol, m["baslik"], urun, pin_dosya, parcalar)
-                print(f"  pin gorseli: {pin_rel}")
-                if canli and not pin_hemen:  # dogrudan yolda gorsel dosyadan yuklenir, link gerekmez
-                    yayinla(pin_dosya, raw_url(pin_rel, repo, dal))
-            girdi["assets"] = [{"image": {"url": raw_url(pin_rel, repo, dal)}}]
-            girdi["text"] = m["aciklama"]
-            girdi["metadata"] = {"pinterest": {"boardServiceId": pano["id"], "title": m["baslik"][:100], "url": plink}}
-        else:
-            girdi["text"] = f"{m['tweet']}\n\n{plink}"
+        print(f"Acik sezonlar: {acik or '-'}")
+        print(f"Gorsel: {yol}  ({urun}, sezon={sezon or '-'})")
+        print(f"Link: {link}")
 
-        print(f"\n[{platform}] {ne_zaman:%Y-%m-%d %H:%M} UTC  metin={metin_id}" + (f"  pano={pano['name']}" if platform == "pinterest" else ""))
-        print("  " + (m["baslik"] + " | " if platform == "pinterest" else "") + girdi["text"].replace("\n", " "))
+        kayitlar = []
+        for platform, saatler in tur.items():
+            kanal = buf["channels"][platform]
+            metin_id, m = metin_sec(metinler, urun, sezon, acik, platform, gecmis)
+            pin_hemen = dogrudan and platform == "pinterest"  # API v5'te zamanlama yok, hemen atilir
+            dolu = {g["zaman_utc"] for g in gecmis if g["platform"] == platform}
+            if pin_hemen:
+                ne_zaman = simdi
+            elif saatler is None:  # pin gorseli yayinlanana kadar gecmis olmasin
+                ne_zaman = simdi + dt.timedelta(minutes=6)
+            else:
+                ne_zaman = bos_zaman(saatler, simdi, dolu)
+            girdi = {
+                "channelId": kanal,
+                "schedulingType": "automatic",
+                "mode": "customScheduled",
+                "dueAt": zaman_metni(ne_zaman),
+                "needsApproval": False,
+                "assets": [{"image": {"url": gorsel_url}}],
+                "source": "anima-otomasyon",
+            }
+            # Etsy Stats'ta trafik kaynagi gorunsun
+            plink = f"{link}{'&' if '?' in link else '?'}utm_source={platform}&utm_medium=social&utm_campaign=anima-otomasyon"
+            if platform == "pinterest":
+                # dikey 1000x1500 pin gorseli (sablon/pin.html)
+                pin_dosya = KOK / "pinler" / urun / f"{Path(yol).stem}--{metin_id.replace(':', '-')}.jpg"
+                pin_rel = pin_dosya.relative_to(KOK).as_posix()
+                if not pin_dosya.exists():
+                    parcalar = (m["pin_ana"], m.get("pin_el", "")) if m.get("pin_ana") else None
+                    pin_yap(KOK / yol, m["baslik"], urun, pin_dosya, parcalar)
+                    print(f"  pin gorseli: {pin_rel}")
+                    if canli and not pin_hemen:  # dogrudan yolda gorsel dosyadan yuklenir, link gerekmez
+                        yayinla(pin_dosya, raw_url(pin_rel, repo, dal))
+                girdi["assets"] = [{"image": {"url": raw_url(pin_rel, repo, dal)}}]
+                girdi["text"] = m["aciklama"]
+                girdi["metadata"] = {"pinterest": {"boardServiceId": pano["id"], "title": m["baslik"][:100], "url": plink}}
+            else:
+                girdi["text"] = f"{m['tweet']}\n\n{plink}"
 
-        kayit = dict(tarih=simdi.date().isoformat(), platform=platform, urun=urun, gorsel=yol, metin_id=metin_id,
-                     pano=pano["name"] if platform == "pinterest" else "", zaman_utc=girdi["dueAt"], buffer_id="", durum="deneme")
-        if canli and pin_hemen:
-            pid = pinterest.pin_ac(ptoken, pano["id"], pin_dosya, m["baslik"], m["aciklama"], plink)
-            kayit.update(buffer_id=f"pin:{pid}", durum="paylasildi")
-            print(f"  OK pin_id={pid}")
-        elif canli:
-            n = bekleyen_sayisi(buf["organization_id"], kanal)
-            if n >= buf["kuyruk_siniri"]:
-                print(f"  ATLANDI: Buffer kuyrugunda {n} gonderi var (sinir {buf['kuyruk_siniri']}).")
-                continue
-            sonuc = gql(OLUSTUR, {"i": girdi})["createPost"]
-            if "post" not in sonuc:
-                raise RuntimeError(f"Buffer hatasi ({platform}): {sonuc.get('message')}")
-            kayit.update(buffer_id=sonuc["post"]["id"], durum="zamanlandi")
-            print(f"  OK buffer_id={sonuc['post']['id']}")
-        kayitlar.append(kayit)
+            print(f"\n[{platform}] {ne_zaman:%Y-%m-%d %H:%M} UTC  metin={metin_id}" + (f"  pano={pano['name']}" if platform == "pinterest" else ""))
+            print("  " + (m["baslik"] + " | " if platform == "pinterest" else "") + girdi["text"].replace("\n", " "))
 
-    if canli:
-        gecmise_yaz(kayitlar)
-    else:
+            kayit = dict(tarih=simdi.date().isoformat(), platform=platform, urun=urun, gorsel=yol, metin_id=metin_id,
+                         pano=pano["name"] if platform == "pinterest" else "", zaman_utc=girdi["dueAt"], buffer_id="", durum="deneme")
+            if canli and pin_hemen:
+                pid = pinterest.pin_ac(ptoken, pano["id"], pin_dosya, m["baslik"], m["aciklama"], plink)
+                kayit.update(buffer_id=f"pin:{pid}", durum="paylasildi")
+                print(f"  OK pin_id={pid}")
+            elif canli:
+                n = bekleyen_sayisi(buf["organization_id"], kanal)
+                if n >= buf["kuyruk_siniri"]:
+                    print(f"  ATLANDI: Buffer kuyrugunda {n} gonderi var (sinir {buf['kuyruk_siniri']}).")
+                    continue
+                sonuc = gql(OLUSTUR, {"i": girdi})["createPost"]
+                if "post" not in sonuc:
+                    raise RuntimeError(f"Buffer hatasi ({platform}): {sonuc.get('message')}")
+                kayit.update(buffer_id=sonuc["post"]["id"], durum="zamanlandi")
+                print(f"  OK buffer_id={sonuc['post']['id']}")
+            kayitlar.append(kayit)
+
+        gecmis.extend(kayitlar)  # sonraki tur ayni gorsel, metin ve saati secmesin
+        if canli:
+            gecmise_yaz(kayitlar)  # tur tur yaz: sonraki tur hata alsa da kayit kalir
+
+    if not canli:
         print("\nDENEME modu: hicbir sey gonderilmedi. Gercek paylasim icin CANLI=1.")
 
 
