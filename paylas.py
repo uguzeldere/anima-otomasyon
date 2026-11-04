@@ -13,6 +13,7 @@ Ortam degiskenleri:
 import csv
 import datetime as dt
 import os
+import re
 import subprocess
 import sys
 import time
@@ -31,6 +32,7 @@ TASARIM = KOK / "tasarimlar"
 GECMIS = KOK / "gecmis.csv"
 ALANLAR = ["tarih", "platform", "urun", "gorsel", "metin_id", "pano", "zaman_utc", "buffer_id", "durum"]
 UZANTILAR = {".jpg", ".jpeg", ".png", ".webp"}
+YONLER = {"left", "right", "back", "front"}  # ham urun gorselleri (Left.png vb.) paylasilmaz
 API = "https://api.buffer.com"
 
 
@@ -80,6 +82,8 @@ def gorsel_sec(urunler, sezonlar, acik, gecmis):
     for urun in urunler:
         for p in sorted((TASARIM / urun).glob("*")):
             if p.suffix.lower() not in UZANTILAR:
+                continue
+            if YONLER & set(re.split(r"[^a-z]+", p.stem.lower())):
                 continue
             sezon = p.stem.split("__")[1] if "__" in p.stem else None
             if sezon and sezon not in acik:
