@@ -1,8 +1,6 @@
 name: Paylas
 
 on:
-  schedule:
-    - cron: "0 5 * * *"      # her gun 05:00 UTC (08:00 Istanbul); GH gecikse bile X 16:00 kacmaz
   workflow_dispatch: {}      # Actions sekmesinden elle de calistirilabilir
 
 permissions:
